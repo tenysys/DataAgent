@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.service.datasource.impl;
 
-import com.alibaba.cloud.ai.dataagent.connector.config.DbConfig;
+import com.alibaba.cloud.ai.dataagent.bo.DbConfigBO;
 import com.alibaba.cloud.ai.dataagent.dto.datasource.SchemaInitRequest;
 import com.alibaba.cloud.ai.dataagent.entity.AgentDatasource;
 import com.alibaba.cloud.ai.dataagent.entity.Datasource;
@@ -25,14 +24,13 @@ import com.alibaba.cloud.ai.dataagent.mapper.AgentDatasourceTablesMapper;
 import com.alibaba.cloud.ai.dataagent.service.datasource.AgentDatasourceService;
 import com.alibaba.cloud.ai.dataagent.service.datasource.DatasourceService;
 import com.alibaba.cloud.ai.dataagent.service.schema.SchemaService;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -64,7 +62,7 @@ public class AgentDatasourceServiceImpl implements AgentDatasourceService {
 			}
 
 			// Create database configuration
-			DbConfig dbConfig = datasourceService.getDbConfig(datasource);
+			DbConfigBO dbConfig = datasourceService.getDbConfig(datasource);
 
 			// Create SchemaInitRequest
 			SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
@@ -84,7 +82,7 @@ public class AgentDatasourceServiceImpl implements AgentDatasourceService {
 	}
 
 	@Override
-	public List<AgentDatasource> getAgentDatasource(Integer agentId) {
+	public List<AgentDatasource> getAgentDatasource(Long agentId) {
 		Assert.notNull(agentId, "Agent ID cannot be null");
 		List<AgentDatasource> adentDatasources = agentDatasourceMapper.selectByAgentIdWithDatasource(agentId);
 
@@ -106,7 +104,7 @@ public class AgentDatasourceServiceImpl implements AgentDatasourceService {
 
 	@Override
 	@Transactional
-	public AgentDatasource addDatasourceToAgent(Integer agentId, Integer datasourceId) {
+	public AgentDatasource addDatasourceToAgent(Long agentId, Integer datasourceId) {
 		// First, disable other data sources for this agent (an agent can only have one
 		// enabled data source)
 		agentDatasourceMapper.disableAllByAgentId(agentId);
@@ -137,12 +135,12 @@ public class AgentDatasourceServiceImpl implements AgentDatasourceService {
 	}
 
 	@Override
-	public void removeDatasourceFromAgent(Integer agentId, Integer datasourceId) {
+	public void removeDatasourceFromAgent(Long agentId, Integer datasourceId) {
 		agentDatasourceMapper.removeRelation(agentId, datasourceId);
 	}
 
 	@Override
-	public AgentDatasource toggleDatasourceForAgent(Integer agentId, Integer datasourceId, Boolean isActive) {
+	public AgentDatasource toggleDatasourceForAgent(Long agentId, Integer datasourceId, Boolean isActive) {
 		// If enabling data source, first check if there are other enabled data sources
 		if (isActive) {
 			int activeCount = agentDatasourceMapper.countActiveByAgentIdExcluding(agentId, datasourceId);
@@ -164,7 +162,7 @@ public class AgentDatasourceServiceImpl implements AgentDatasourceService {
 
 	@Override
 	@Transactional
-	public void updateDatasourceTables(Integer agentId, Integer datasourceId, List<String> tables) {
+	public void updateDatasourceTables(Long agentId, Integer datasourceId, List<String> tables) {
 		if (agentId == null || datasourceId == null || tables == null) {
 			throw new IllegalArgumentException("参数不能为空");
 		}

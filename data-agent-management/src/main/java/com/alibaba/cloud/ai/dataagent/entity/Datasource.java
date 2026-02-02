@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -24,7 +23,6 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import org.springframework.util.StringUtils;
 
 @Data
 @NoArgsConstructor
@@ -65,36 +63,6 @@ public class Datasource {
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime updateTime;
-
-	/**
-	 * Generate connection URL
-	 */
-	// todo: 改为策略模式
-	public void generateConnectionUrl() {
-		if (StringUtils.hasText(connectionUrl)) {
-			return;
-		}
-		if (host != null && port != null && databaseName != null) {
-			if ("mysql".equalsIgnoreCase(type)) {
-				this.connectionUrl = String.format(
-						"jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai",
-						host, port, databaseName);
-			}
-			else if ("postgresql".equalsIgnoreCase(type)) {
-				this.connectionUrl = String.format(
-						"jdbc:postgresql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai",
-						host, port, databaseName);
-			}
-			else if ("h2".equalsIgnoreCase(type)) {
-				this.connectionUrl = String.format(
-						"jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE",
-						databaseName);
-			}
-			else if ("dameng".equalsIgnoreCase(type)) {
-				this.connectionUrl = String.format("jdbc:dm://%s:%d", host, port);
-			}
-		}
-	}
 
 	@Override
 	public String toString() {

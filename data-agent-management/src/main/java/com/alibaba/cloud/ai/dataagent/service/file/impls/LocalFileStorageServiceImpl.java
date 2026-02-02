@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,9 +15,13 @@
  */
 package com.alibaba.cloud.ai.dataagent.service.file.impls;
 
-import com.alibaba.cloud.ai.dataagent.config.FileStorageProperties;
+import com.alibaba.cloud.ai.dataagent.properties.FileStorageProperties;
 import com.alibaba.cloud.ai.dataagent.service.file.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -27,12 +31,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
 
 @Slf4j
 @AllArgsConstructor
@@ -48,16 +46,18 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
 			if (originalFilename != null && originalFilename.contains(".")) {
 				extension = originalFilename.substring(originalFilename.lastIndexOf("."));
 			}
-			String filename = UUID.randomUUID().toString() + extension;
+			String filename = UUID.randomUUID() + extension;
 
 			String storagePath = buildStoragePath(subPath, filename);
 
-			Path uploadDir = Paths.get(fileStorageProperties.getPath(), storagePath).getParent();
-			if (uploadDir != null && !Files.exists(uploadDir)) {
+			Path filePath = fileStorageProperties.getLocalBasePath().resolve(storagePath);
+
+			checkPathSecurity(filePath);
+
+			Path uploadDir = filePath.getParent();
+			if (!Files.exists(uploadDir)) {
 				Files.createDirectories(uploadDir);
 			}
-
-			Path filePath = Paths.get(fileStorageProperties.getPath(), storagePath);
 			Files.copy(file.getInputStream(), filePath);
 
 			log.info("文件存储成功: {}", storagePath);
@@ -73,7 +73,8 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
 	@Override
 	public boolean deleteFile(String filePath) {
 		try {
-			Path fullPath = Paths.get(fileStorageProperties.getPath(), filePath);
+			Path fullPath = fileStorageProperties.getLocalBasePath().resolve(filePath);
+			checkPathSecurity(fullPath);
 			if (Files.exists(fullPath)) {
 				Files.deleteIfExists(fullPath);
 				log.info("成功删除文件: {}", filePath);
@@ -92,6 +93,7 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
 
 	@Override
 	public String getFileUrl(String filePath) {
+		checkPathSecurity(fileStorageProperties.getLocalBasePath().resolve(filePath));
 		try {
 			ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
 				.getRequestAttributes();
@@ -111,12 +113,23 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
 
 	@Override
 	public Resource getFileResource(String filePath) {
-		Path fullPath = Paths.get(fileStorageProperties.getPath(), filePath);
+		Path fullPath = fileStorageProperties.getLocalBasePath().resolve(filePath);
+		checkPathSecurity(fullPath);
 		if (Files.exists(fullPath)) {
 			return new FileSystemResource(fullPath);
 		}
 		else {
 			throw new RuntimeException("File is not exist: " + filePath);
+		}
+	}
+
+	/**
+	 * 检查文件访问路径是否安全
+	 * @param filePath 文件访问路径
+	 */
+	private void checkPathSecurity(Path filePath) {
+		if (!filePath.normalize().startsWith(fileStorageProperties.getLocalBasePath())) {
+			throw new SecurityException("Invalid file path");
 		}
 	}
 

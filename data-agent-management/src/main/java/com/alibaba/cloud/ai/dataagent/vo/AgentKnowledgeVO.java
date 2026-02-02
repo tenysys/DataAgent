@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.dataagent.vo;
 
-import com.alibaba.cloud.ai.dataagent.common.enums.EmbeddingStatus;
+import com.alibaba.cloud.ai.dataagent.enums.EmbeddingStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,6 +51,9 @@ public class AgentKnowledgeVO {
 
 	// 操作失败的错误信息
 	private String errorMsg;
+
+	// 分块策略类型：token, recursive
+	private String splitterType;
 
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
 	private LocalDateTime createdTime;

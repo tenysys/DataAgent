@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,10 +70,6 @@ public class AgentServiceImpl implements AgentService {
 			// Add
 			agent.setCreateTime(now);
 			agent.setUpdateTime(now);
-			// 确保 humanReviewEnabled 不为 null
-			if (agent.getHumanReviewEnabled() == null) {
-				agent.setHumanReviewEnabled(0);
-			}
 			if (agent.getApiKeyEnabled() == null) {
 				agent.setApiKeyEnabled(0);
 			}
@@ -83,10 +79,6 @@ public class AgentServiceImpl implements AgentService {
 		else {
 			// Update
 			agent.setUpdateTime(now);
-			// 确保 humanReviewEnabled 不为 null
-			if (agent.getHumanReviewEnabled() == null) {
-				agent.setHumanReviewEnabled(0);
-			}
 			if (agent.getApiKeyEnabled() == null) {
 				agent.setApiKeyEnabled(0);
 			}

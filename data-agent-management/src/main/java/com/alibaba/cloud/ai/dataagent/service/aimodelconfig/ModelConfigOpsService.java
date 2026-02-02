@@ -1,12 +1,11 @@
-
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.dataagent.service.aimodelconfig;
 
-import com.alibaba.cloud.ai.dataagent.common.enums.ModelType;
+import com.alibaba.cloud.ai.dataagent.enums.ModelType;
 import com.alibaba.cloud.ai.dataagent.dto.ModelConfigDTO;
 import com.alibaba.cloud.ai.dataagent.entity.ModelConfig;
-import com.alibaba.fastjson.JSON;
+import com.alibaba.cloud.ai.dataagent.util.JsonUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
@@ -27,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 
 @Slf4j
 @Service
@@ -38,6 +40,8 @@ public class ModelConfigOpsService {
 	private final DynamicModelFactory modelFactory;
 
 	private final AiModelRegistry aiModelRegistry;
+
+	private final ObjectMapper objectMapper = JsonUtil.getObjectMapper();
 
 	/**
 	 * 专门处理：更新配置并热刷新的聚合逻辑
@@ -115,7 +119,12 @@ public class ModelConfigOpsService {
 			}
 		}
 		catch (Exception e) {
-			log.error("Failed to test model connection. Config: {}", JSON.toJSONString(config), e);
+			try {
+				log.error("Failed to test model connection. Config: {}", objectMapper.writeValueAsString(config), e);
+			}
+			catch (JsonProcessingException e1) {
+				log.error("Failed to convert config to JSON. Config: {}", config, e1);
+			}
 			// 重新抛出异常，让 Controller 捕获并展示给前端
 			// 如果是 OpenAiHttpException，通常包含具体的 API 错误信息
 			throw new RuntimeException(parseErrorMessage(e));
@@ -133,7 +142,10 @@ public class ModelConfigOpsService {
 		String promptText = "Hello";
 
 		// 3. 调用
-		String response = tempModel.call(promptText);
+		Flux<String> responseFlux = tempModel.stream(promptText);
+		String response = responseFlux.collect(StringBuilder::new, StringBuilder::append)
+			.map(StringBuilder::toString)
+			.block();
 
 		// 4. 校验结果
 		if (!StringUtils.hasText(response)) {

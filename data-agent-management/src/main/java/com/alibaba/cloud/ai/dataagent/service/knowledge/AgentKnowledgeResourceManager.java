@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.dataagent.service.knowledge;
 
-import com.alibaba.cloud.ai.dataagent.common.constant.Constant;
-import com.alibaba.cloud.ai.dataagent.common.constant.DocumentMetadataConstant;
-import com.alibaba.cloud.ai.dataagent.common.enums.KnowledgeType;
-import com.alibaba.cloud.ai.dataagent.common.util.DocumentConverterUtil;
+import com.alibaba.cloud.ai.dataagent.constant.Constant;
+import com.alibaba.cloud.ai.dataagent.constant.DocumentMetadataConstant;
+import com.alibaba.cloud.ai.dataagent.enums.KnowledgeType;
+import com.alibaba.cloud.ai.dataagent.util.DocumentConverterUtil;
 import com.alibaba.cloud.ai.dataagent.entity.AgentKnowledge;
 import com.alibaba.cloud.ai.dataagent.service.file.FileStorageService;
 import com.alibaba.cloud.ai.dataagent.service.vectorstore.AgentVectorStoreService;
@@ -39,15 +39,15 @@ import java.util.Map;
 @Component
 public class AgentKnowledgeResourceManager {
 
-	private final TextSplitter textSplitter;
+	private final TextSplitterFactory textSplitterFactory;
 
 	private final FileStorageService fileStorageService;
 
 	private final AgentVectorStoreService agentVectorStoreService;
 
-	public AgentKnowledgeResourceManager(TextSplitter textSplitter, FileStorageService fileStorageService,
+	public AgentKnowledgeResourceManager(TextSplitterFactory textSplitterFactory, FileStorageService fileStorageService,
 			AgentVectorStoreService agentVectorStoreService) {
-		this.textSplitter = textSplitter;
+		this.textSplitterFactory = textSplitterFactory;
 		this.fileStorageService = fileStorageService;
 		this.agentVectorStoreService = agentVectorStoreService;
 	}
@@ -76,7 +76,7 @@ public class AgentKnowledgeResourceManager {
 	private void processDocumentKnowledge(AgentKnowledge knowledge) {
 
 		// 处理文档
-		List<Document> documents = getAndSplitDocument(knowledge.getFilePath());
+		List<Document> documents = getAndSplitDocument(knowledge.getFilePath(), knowledge.getSplitterType());
 		if (documents == null || documents.isEmpty()) {
 			log.error("No documents extracted from file: knowledgeId={}, filePath={}", knowledge.getId(),
 					knowledge.getFilePath());
@@ -89,12 +89,12 @@ public class AgentKnowledgeResourceManager {
 
 		// 添加到向量存储
 		agentVectorStoreService.addDocuments(knowledge.getAgentId().toString(), documentsWithMetadata);
-		log.info("Successfully vectorized DOCUMENT knowledge: id={}, filePath={}, documentCount={}", knowledge.getId(),
-				knowledge.getFilePath(), documentsWithMetadata.size());
+		log.info("Successfully vectorized DOCUMENT knowledge: id={}, filePath={}, documentCount={}, splitterType={}",
+				knowledge.getId(), knowledge.getFilePath(), documentsWithMetadata.size(), knowledge.getSplitterType());
 
 	}
 
-	private List<Document> getAndSplitDocument(String filePath) {
+	private List<Document> getAndSplitDocument(String filePath, String splitterType) {
 		// 使用FileStorageService获取文件资源对象
 		Resource resource = fileStorageService.getFileResource(filePath);
 
@@ -102,7 +102,11 @@ public class AgentKnowledgeResourceManager {
 		TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(resource);
 		List<Document> documents = tikaDocumentReader.read();
 
-		return textSplitter.apply(documents);
+		// 根据splitterType获取对应的分块器
+		TextSplitter splitter = textSplitterFactory.getSplitter(splitterType);
+		log.info("Using splitter type: {} for document splitting", splitterType);
+
+		return splitter.apply(documents);
 	}
 
 	/**
