@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,7 +45,8 @@ public class DynamicModelFactory {
 		checkBasic(config);
 
 		// 2. 构建 OpenAiApi (核心通讯对象)
-		OpenAiApi.Builder apiBuilder = OpenAiApi.builder().apiKey(config.getApiKey()).baseUrl(config.getBaseUrl());
+		String apiKey = StringUtils.hasText(config.getApiKey()) ? config.getApiKey() : "";
+		OpenAiApi.Builder apiBuilder = OpenAiApi.builder().apiKey(apiKey).baseUrl(config.getBaseUrl());
 
 		if (StringUtils.hasText(config.getCompletionsPath())) {
 			apiBuilder.completionsPath(config.getCompletionsPath());
@@ -64,7 +65,9 @@ public class DynamicModelFactory {
 
 	private static void checkBasic(ModelConfigDTO config) {
 		Assert.hasText(config.getBaseUrl(), "baseUrl must not be empty");
-		Assert.hasText(config.getApiKey(), "apiKey must not be empty");
+		if (!"custom".equalsIgnoreCase(config.getProvider())) {
+			Assert.hasText(config.getApiKey(), "apiKey must not be empty");
+		}
 		Assert.hasText(config.getModelName(), "modelName must not be empty");
 	}
 
@@ -76,7 +79,8 @@ public class DynamicModelFactory {
 				config.getModelName(), config.getBaseUrl());
 		checkBasic(config);
 
-		OpenAiApi.Builder apiBuilder = OpenAiApi.builder().apiKey(config.getApiKey()).baseUrl(config.getBaseUrl());
+		String apiKey = StringUtils.hasText(config.getApiKey()) ? config.getApiKey() : "";
+		OpenAiApi.Builder apiBuilder = OpenAiApi.builder().apiKey(apiKey).baseUrl(config.getBaseUrl());
 
 		if (StringUtils.hasText(config.getEmbeddingsPath())) {
 			apiBuilder.embeddingsPath(config.getEmbeddingsPath());

@@ -1,11 +1,11 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,20 +15,19 @@
  */
 package com.alibaba.cloud.ai.dataagent.workflow.node;
 
-import com.alibaba.cloud.ai.dataagent.common.constant.DocumentMetadataConstant;
-import com.alibaba.cloud.ai.dataagent.common.enums.KnowledgeType;
-import com.alibaba.cloud.ai.dataagent.common.enums.TextType;
-import com.alibaba.cloud.ai.dataagent.common.util.*;
+import com.alibaba.cloud.ai.dataagent.constant.DocumentMetadataConstant;
+import com.alibaba.cloud.ai.dataagent.enums.KnowledgeType;
+import com.alibaba.cloud.ai.dataagent.enums.TextType;
 import com.alibaba.cloud.ai.dataagent.dto.prompt.EvidenceQueryRewriteDTO;
 import com.alibaba.cloud.ai.dataagent.entity.AgentKnowledge;
 import com.alibaba.cloud.ai.dataagent.mapper.AgentKnowledgeMapper;
 import com.alibaba.cloud.ai.dataagent.prompt.PromptHelper;
 import com.alibaba.cloud.ai.dataagent.service.llm.LlmService;
 import com.alibaba.cloud.ai.dataagent.service.vectorstore.AgentVectorStoreService;
+import com.alibaba.cloud.ai.dataagent.util.*;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.FluxConverter;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.dataagent.common.constant.Constant.*;
+import static com.alibaba.cloud.ai.dataagent.constant.Constant.*;
 
 @Slf4j
 @Component
@@ -93,11 +92,9 @@ public class EvidenceRecallNode implements NodeAction {
 					return resultMap;
 				});
 
-		Flux<GraphResponse<StreamingOutput>> evidenceFlux = FluxConverter.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(r -> resultMap)
-			.build(evidenceDisplaySink.asFlux().map(ChatResponseUtil::createPureResponse));
+		Flux<GraphResponse<StreamingOutput>> evidenceFlux = FluxUtil.createStreamingGenerator(this.getClass(), state,
+				evidenceDisplaySink.asFlux().map(ChatResponseUtil::createPureResponse), Flux.empty(), Flux.empty(),
+				result -> resultMap);
 		return Map.of(EVIDENCE, generator.concatWith(evidenceFlux));
 	}
 
@@ -247,7 +244,7 @@ public class EvidenceRecallNode implements NodeAction {
 	private void processFaqOrQaKnowledge(Document doc, int index, StringBuilder result) {
 		Map<String, Object> metadata = doc.getMetadata();
 		String content = doc.getText();
-		Integer knowledgeId = (Integer) metadata.get(DocumentMetadataConstant.DB_AGENT_KNOWLEDGE_ID);
+		Integer knowledgeId = ((Number) metadata.get(DocumentMetadataConstant.DB_AGENT_KNOWLEDGE_ID)).intValue();
 		String knowledgeType = (String) metadata.get(DocumentMetadataConstant.CONCRETE_AGENT_KNOWLEDGE_TYPE);
 
 		log.debug("Processing {} type knowledge with id: {}", knowledgeType, knowledgeId);

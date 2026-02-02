@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,16 @@
  */
 package com.alibaba.cloud.ai.dataagent.service.schema;
 
-import com.alibaba.cloud.ai.dataagent.bo.schema.DbQueryParameter;
+import com.alibaba.cloud.ai.dataagent.connector.DbQueryParameter;
 import com.alibaba.cloud.ai.dataagent.bo.schema.ForeignKeyInfoBO;
 import com.alibaba.cloud.ai.dataagent.bo.schema.TableInfoBO;
-import com.alibaba.cloud.ai.dataagent.common.constant.DocumentMetadataConstant;
-import com.alibaba.cloud.ai.dataagent.common.enums.BizDataSourceTypeEnum;
-import com.alibaba.cloud.ai.dataagent.common.util.JsonUtil;
-import com.alibaba.cloud.ai.dataagent.config.DataAgentProperties;
+import com.alibaba.cloud.ai.dataagent.constant.DocumentMetadataConstant;
+import com.alibaba.cloud.ai.dataagent.enums.BizDataSourceTypeEnum;
+import com.alibaba.cloud.ai.dataagent.util.JsonUtil;
+import com.alibaba.cloud.ai.dataagent.properties.DataAgentProperties;
 import com.alibaba.cloud.ai.dataagent.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.dataagent.connector.accessor.AccessorFactory;
-import com.alibaba.cloud.ai.dataagent.connector.config.DbConfig;
+import com.alibaba.cloud.ai.dataagent.bo.DbConfigBO;
 import com.alibaba.cloud.ai.dataagent.dto.datasource.SchemaInitRequest;
 import com.alibaba.cloud.ai.dataagent.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dataagent.dto.schema.SchemaDTO;
@@ -50,8 +50,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.dataagent.common.util.DocumentConverterUtil.convertColumnsToDocuments;
-import static com.alibaba.cloud.ai.dataagent.common.util.DocumentConverterUtil.convertTablesToDocuments;
+import static com.alibaba.cloud.ai.dataagent.util.DocumentConverterUtil.convertColumnsToDocuments;
+import static com.alibaba.cloud.ai.dataagent.util.DocumentConverterUtil.convertTablesToDocuments;
 
 /**
  * Schema service base class, providing common method implementations
@@ -82,21 +82,26 @@ public class SchemaServiceImpl implements SchemaService {
 	public void buildSchemaFromDocuments(String agentId, List<Document> currentColumnDocuments,
 			List<Document> tableDocuments, SchemaDTO schemaDTO) {
 
+		// 创建可变列表副本，避免不可变集合异常
+		List<Document> mutableColumnDocuments = new ArrayList<>(currentColumnDocuments);
+		List<Document> mutableTableDocuments = new ArrayList<>(tableDocuments);
+
 		// 如果外键关系是"订单表.订单ID=订单详情表.订单ID"，那么 relatedNamesFromForeignKeys
 		// 将包含"订单表.订单ID"和"订单详情表.订单ID"
-		Set<String> relatedNamesFromForeignKeys = extractRelatedNamesFromForeignKeys(tableDocuments);
+		Set<String> relatedNamesFromForeignKeys = extractRelatedNamesFromForeignKeys(mutableTableDocuments);
 
 		// 通过外键加载缺失的表和列
-		List<String> missingTables = getMissingTableNamesWithForeignKeySet(tableDocuments, relatedNamesFromForeignKeys);
+		List<String> missingTables = getMissingTableNamesWithForeignKeySet(mutableTableDocuments,
+				relatedNamesFromForeignKeys);
 		if (!missingTables.isEmpty()) {
-			loadMissingTableDocuments(agentId, tableDocuments, missingTables);
-			loadMissingColDocForMissingTables(agentId, currentColumnDocuments, missingTables);
+			loadMissingTableDocuments(agentId, mutableTableDocuments, missingTables);
+			loadMissingColDocForMissingTables(agentId, mutableColumnDocuments, missingTables);
 		}
 
 		// Build table list
-		List<TableDTO> tableList = buildTableListFromDocuments(tableDocuments);
+		List<TableDTO> tableList = buildTableListFromDocuments(mutableTableDocuments);
 		// Attach columns to corresponding tables
-		attachColumnsToTables(currentColumnDocuments, tableList);
+		attachColumnsToTables(mutableColumnDocuments, tableList);
 
 		// Finally assemble SchemaDTO
 		schemaDTO.setTable(tableList);
@@ -112,7 +117,7 @@ public class SchemaServiceImpl implements SchemaService {
 	@Override
 	public Boolean schema(String agentId, SchemaInitRequest schemaInitRequest) throws Exception {
 		log.info("Starting schema initialization for agent: {}", agentId);
-		DbConfig config = schemaInitRequest.getDbConfig();
+		DbConfigBO config = schemaInitRequest.getDbConfig();
 		DbQueryParameter dqp = DbQueryParameter.from(config)
 			.setSchema(config.getSchema())
 			.setTables(schemaInitRequest.getTables());
@@ -175,7 +180,7 @@ public class SchemaServiceImpl implements SchemaService {
 	 * @param foreignKeyMap 外键映射
 	 * @throws Exception 处理失败时抛出异常
 	 */
-	private void processTablesInParallel(List<TableInfoBO> tables, DbConfig config,
+	private void processTablesInParallel(List<TableInfoBO> tables, DbConfigBO config,
 			Map<String, List<String>> foreignKeyMap) throws Exception {
 
 		// 根据CPU核心数确定并行度，但不超过表的数量
@@ -435,7 +440,7 @@ public class SchemaServiceImpl implements SchemaService {
 	 * @param dbConfig Database configuration
 	 */
 	@Override
-	public void extractDatabaseName(SchemaDTO schemaDTO, DbConfig dbConfig) {
+	public void extractDatabaseName(SchemaDTO schemaDTO, DbConfigBO dbConfig) {
 		String pattern = ":\\d+/([^/?&]+)";
 		if (BizDataSourceTypeEnum.isMysqlDialect(dbConfig.getDialectType())) {
 			Pattern regex = Pattern.compile(pattern);

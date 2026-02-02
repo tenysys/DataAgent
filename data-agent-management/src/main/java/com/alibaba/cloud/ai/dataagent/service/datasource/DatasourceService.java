@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.service.datasource;
 
-import com.alibaba.cloud.ai.dataagent.connector.config.DbConfig;
+import com.alibaba.cloud.ai.dataagent.bo.DbConfigBO;
 import com.alibaba.cloud.ai.dataagent.entity.AgentDatasource;
 import com.alibaba.cloud.ai.dataagent.entity.Datasource;
 import com.alibaba.cloud.ai.dataagent.entity.LogicalRelation;
-
 import java.util.List;
 
 public interface DatasourceService {
@@ -75,7 +73,7 @@ public interface DatasourceService {
 	 */
 	// 应该使用 AgentDatasourceService 中的方法
 	@Deprecated
-	List<AgentDatasource> getAgentDatasource(Integer agentId);
+	List<AgentDatasource> getAgentDatasource(Long agentId);
 
 	List<String> getDatasourceTables(Integer datasourceId) throws Exception;
 
@@ -84,7 +82,7 @@ public interface DatasourceService {
 	 */
 	List<String> getTableColumns(Integer datasourceId, String tableName) throws Exception;
 
-	DbConfig getDbConfig(Datasource datasource);
+	DbConfigBO getDbConfig(Datasource datasource);
 
 	/**
 	 * 获取数据源的逻辑外键列表

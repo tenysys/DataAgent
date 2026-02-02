@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.dto.planner;
 
-import com.alibaba.cloud.ai.dataagent.common.constant.Constant;
-import com.alibaba.cloud.ai.dataagent.common.util.JsonUtil;
+import com.alibaba.cloud.ai.dataagent.constant.Constant;
+import com.alibaba.cloud.ai.dataagent.util.JsonUtil;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,9 +32,11 @@ import java.util.List;
 public class Plan {
 
 	@JsonProperty("thought_process")
+	@JsonPropertyDescription("简要描述你的分析思路。必须明确提到你检查了哪些表和字段")
 	private String thoughtProcess;
 
 	@JsonProperty("execution_plan")
+	@JsonPropertyDescription("执行计划的步骤列表")
 	private List<ExecutionStep> executionPlan;
 
 	@Override

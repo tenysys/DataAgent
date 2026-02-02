@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.dataagent.prompt;
 
+import com.alibaba.cloud.ai.dataagent.bo.schema.DisplayStyleBO;
+import com.alibaba.cloud.ai.dataagent.dto.prompt.EvidenceQueryRewriteDTO;
+import com.alibaba.cloud.ai.dataagent.dto.prompt.IntentRecognitionOutputDTO;
+import com.alibaba.cloud.ai.dataagent.dto.prompt.QueryEnhanceOutputDTO;
 import com.alibaba.cloud.ai.dataagent.dto.prompt.SemanticConsistencyDTO;
 import com.alibaba.cloud.ai.dataagent.dto.prompt.SqlGenerationDTO;
 import com.alibaba.cloud.ai.dataagent.dto.schema.ColumnDTO;
@@ -31,6 +35,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.ai.converter.BeanOutputConverter;
+
+import static com.alibaba.cloud.ai.dataagent.util.ReportTemplateUtil.cleanJsonExample;
 
 public class PromptHelper {
 
@@ -135,22 +142,20 @@ public class PromptHelper {
 	 * @return built prompt
 	 */
 	public static String buildReportGeneratorPromptWithOptimization(String userRequirementsAndPlan,
-			String analysisStepsAndData, String summaryAndRecommendations, List<UserPromptConfig> optimizationConfigs,
-			boolean plainReport) {
+			String analysisStepsAndData, String summaryAndRecommendations, List<UserPromptConfig> optimizationConfigs) {
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
+		params.put("json_example", cleanJsonExample);
 
 		// Build optional optimization section content from user configs
 		String optimizationSection = buildOptimizationSection(optimizationConfigs, params);
 		params.put("optimization_section", optimizationSection);
 
-		// Render using the chosen report generator template
-		return (plainReport ? PromptConstant.getReportGeneratorPlainPromptTemplate()
-				: PromptConstant.getReportGeneratorPromptTemplate())
-			.render(params);
+		// only plain report
+		return PromptConstant.getReportGeneratorPlainPromptTemplate().render(params);
 	}
 
 	public static String buildSqlErrorFixerPrompt(SqlGenerationDTO sqlGenerationDTO) {
@@ -231,6 +236,9 @@ public class PromptHelper {
 		Map<String, Object> params = new HashMap<>();
 		params.put("multi_turn", multiTurn != null ? multiTurn : "(无)");
 		params.put("latest_query", latestQuery);
+		BeanOutputConverter<IntentRecognitionOutputDTO> beanOutputConverter = new BeanOutputConverter<>(
+				IntentRecognitionOutputDTO.class);
+		params.put("format", beanOutputConverter.getFormat());
 		return PromptConstant.getIntentRecognitionPromptTemplate().render(params);
 	}
 
@@ -249,7 +257,17 @@ public class PromptHelper {
 		else
 			params.put("evidence", evidence);
 		params.put("current_time_info", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+		BeanOutputConverter<QueryEnhanceOutputDTO> beanOutputConverter = new BeanOutputConverter<>(
+				QueryEnhanceOutputDTO.class);
+		params.put("format", beanOutputConverter.getFormat());
 		return PromptConstant.getQueryEnhancementPromptTemplate().render(params);
+	}
+
+	public static String buildDataViewAnalysisPrompt() {
+		Map<String, Object> params = new HashMap<>();
+		BeanOutputConverter<DisplayStyleBO> beanOutputConverter = new BeanOutputConverter<>(DisplayStyleBO.class);
+		params.put("format", beanOutputConverter.getFormat());
+		return PromptConstant.getDataViewAnalyzePromptTemplate().render(params);
 	}
 
 	/**
@@ -281,6 +299,9 @@ public class PromptHelper {
 		Map<String, Object> params = new HashMap<>();
 		params.put("multi_turn", multiTurn != null ? multiTurn : "(无)");
 		params.put("latest_query", latestQuery);
+		BeanOutputConverter<EvidenceQueryRewriteDTO> beanOutputConverter = new BeanOutputConverter<>(
+				EvidenceQueryRewriteDTO.class);
+		params.put("format", beanOutputConverter.getFormat());
 		return PromptConstant.getEvidenceQueryRewritePromptTemplate().render(params);
 	}
 

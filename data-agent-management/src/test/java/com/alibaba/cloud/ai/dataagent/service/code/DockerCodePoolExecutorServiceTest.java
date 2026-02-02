@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.service.code;
 
-import com.alibaba.cloud.ai.dataagent.common.enums.CodePoolExecutorEnum;
-import com.alibaba.cloud.ai.dataagent.config.CodeExecutorProperties;
+import com.alibaba.cloud.ai.dataagent.enums.CodePoolExecutorEnum;
+import com.alibaba.cloud.ai.dataagent.properties.CodeExecutorProperties;
 import com.alibaba.cloud.ai.dataagent.service.code.impls.DockerCodePoolExecutorService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.StringUtils;
 
@@ -42,6 +42,7 @@ public class DockerCodePoolExecutorServiceTest {
 
 	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorServiceTest.class);
 
+	@Qualifier("codeExecutorProperties")
 	@Autowired
 	private CodeExecutorProperties properties;
 
@@ -49,7 +50,9 @@ public class DockerCodePoolExecutorServiceTest {
 
 	@BeforeEach
 	public void init() {
-		this.properties.setCodeTimeout("5s");
+		this.properties.setCoreContainerNum(5);
+		this.properties.setTempContainerNum(5);
+		this.properties.setTaskQueueSize(10);
 		this.properties.setCodePoolExecutor(CodePoolExecutorEnum.DOCKER);
 		this.codePoolExecutorService = new DockerCodePoolExecutorService(properties);
 	}
@@ -142,33 +145,41 @@ public class DockerCodePoolExecutorServiceTest {
 		final int taskNum = 7;
 		CountDownLatch countDownLatch = new CountDownLatch(taskNum);
 		AtomicInteger successTask = new AtomicInteger(0);
+		AtomicInteger failedTask = new AtomicInteger(0);
 
-		Consumer<Consumer<DockerCodePoolExecutorServiceTest>> submitTask = consumer -> {
-			executorService.submit(() -> {
-				try {
-					consumer.accept(this);
-					successTask.incrementAndGet();
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				finally {
-					countDownLatch.countDown();
-				}
-			});
-		};
+		try {
+			Consumer<Consumer<DockerCodePoolExecutorServiceTest>> submitTask = consumer -> {
+				executorService.submit(() -> {
+					try {
+						consumer.accept(this);
+						successTask.incrementAndGet();
+					}
+					catch (Exception e) {
+						log.error("Task Failed {}", e.getMessage(), e);
+						failedTask.incrementAndGet();
+					}
+					finally {
+						countDownLatch.countDown();
+					}
+				});
+			};
 
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testNormalCode);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testPipInstall);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testTimeoutCode);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testErrorCode);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testNeedInput);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testStudentScoreAnalysis);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testPandasCode);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testNormalCode);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testPipInstall);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testTimeoutCode);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testErrorCode);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testNeedInput);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testStudentScoreAnalysis);
+			submitTask.accept(DockerCodePoolExecutorServiceTest::testPandasCode);
 
-		assert countDownLatch.await(600L, TimeUnit.SECONDS);
-		log.info("Success Task Number: {}", successTask.get());
-		Assertions.assertEquals(taskNum, successTask.get());
+			assert countDownLatch.await(70L, TimeUnit.SECONDS);
+			log.info("Success Task Number: {},Failed Task Number: {}", successTask.get(), failedTask.get());
+			Assertions.assertEquals(taskNum, successTask.get());
+		}
+		finally {
+			executorService.shutdown();
+		}
+
 	}
 
 }

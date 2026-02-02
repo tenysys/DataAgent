@@ -13,7 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export interface ResultData {
+  displayStyle?: ResultDisplayStyleBO;
+  resultSet: ResultSetData;
+}
 
+export interface ResultDisplayStyleBO {
+  type: string;
+  title: string;
+  x: string;
+  y: Array<string>;
+}
 /**
  * 结果集数据结构
  */

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.service.knowledge;
 
-import com.alibaba.cloud.ai.dataagent.common.enums.EmbeddingStatus;
-import com.alibaba.cloud.ai.dataagent.common.enums.KnowledgeType;
+import com.alibaba.cloud.ai.dataagent.enums.EmbeddingStatus;
+import com.alibaba.cloud.ai.dataagent.enums.KnowledgeType;
 import com.alibaba.cloud.ai.dataagent.converter.AgentKnowledgeConverter;
 import com.alibaba.cloud.ai.dataagent.vo.PageResult;
 import com.alibaba.cloud.ai.dataagent.dto.knowledge.agentknowledge.AgentKnowledgeQueryDTO;
@@ -86,8 +85,10 @@ public class AgentKnowledgeServiceImpl implements AgentKnowledgeService {
 			throw new RuntimeException("Failed to create knowledge in database.");
 		}
 
-		eventPublisher.publishEvent(new AgentKnowledgeEmbeddingEvent(this, knowledge.getId()));
-		log.info("Knowledge created and event published. Id: {}", knowledge.getId());
+		eventPublisher
+			.publishEvent(new AgentKnowledgeEmbeddingEvent(this, knowledge.getId(), knowledge.getSplitterType()));
+		log.info("Knowledge created and event published. Id: {}, splitterType: {}", knowledge.getId(),
+				knowledge.getSplitterType());
 
 		return agentKnowledgeConverter.toVo(knowledge);
 	}
@@ -211,12 +212,13 @@ public class AgentKnowledgeServiceImpl implements AgentKnowledgeService {
 		}
 
 		// 重置状态
-		// 立刻给用户反馈“已变成处理中”
+		// 立刻给用户反馈"已变成处理中"
 		knowledge.setEmbeddingStatus(EmbeddingStatus.PENDING);
 		knowledge.setErrorMsg("");
 		agentKnowledgeMapper.update(knowledge);
-		eventPublisher.publishEvent(new AgentKnowledgeEmbeddingEvent(this, knowledge.getId()));
-		log.info("Retry embedding for knowledgeId: {}", id);
+		eventPublisher
+			.publishEvent(new AgentKnowledgeEmbeddingEvent(this, knowledge.getId(), knowledge.getSplitterType()));
+		log.info("Retry embedding for knowledgeId: {}, splitterType: {}", id, knowledge.getSplitterType());
 	}
 
 }

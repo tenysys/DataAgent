@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dataagent.config;
 
-import com.alibaba.cloud.ai.dataagent.common.util.McpServerToolUtil;
-import com.alibaba.cloud.ai.dataagent.common.util.NodeBeanUtil;
+import com.alibaba.cloud.ai.dataagent.properties.CodeExecutorProperties;
+import com.alibaba.cloud.ai.dataagent.properties.DataAgentProperties;
+import com.alibaba.cloud.ai.dataagent.properties.FileStorageProperties;
+import com.alibaba.cloud.ai.dataagent.splitter.SentenceSplitter;
+import com.alibaba.cloud.ai.transformer.splitter.RecursiveCharacterTextSplitter;
+import com.alibaba.cloud.ai.dataagent.splitter.SemanticTextSplitter;
+import com.alibaba.cloud.ai.dataagent.splitter.ParagraphTextSplitter;
+import com.alibaba.cloud.ai.dataagent.util.McpServerToolUtil;
+import com.alibaba.cloud.ai.dataagent.util.NodeBeanUtil;
 import com.alibaba.cloud.ai.dataagent.service.aimodelconfig.AiModelRegistry;
 import com.alibaba.cloud.ai.dataagent.strategy.EnhancedTokenCountBatchingStrategy;
 import com.alibaba.cloud.ai.dataagent.workflow.dispatcher.*;
@@ -64,7 +70,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.alibaba.cloud.ai.dataagent.common.constant.Constant.*;
+import static com.alibaba.cloud.ai.dataagent.constant.Constant.*;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
@@ -133,6 +139,7 @@ public class DataAgentConfiguration implements DisposableBean {
 			keyStrategyHashMap.put(TABLE_RELATION_OUTPUT, KeyStrategy.REPLACE);
 			keyStrategyHashMap.put(TABLE_RELATION_EXCEPTION_OUTPUT, KeyStrategy.REPLACE);
 			keyStrategyHashMap.put(TABLE_RELATION_RETRY_COUNT, KeyStrategy.REPLACE);
+			keyStrategyHashMap.put(DB_DIALECT_TYPE, KeyStrategy.REPLACE);
 			// Feasibility Assessment 节点输出
 			keyStrategyHashMap.put(FEASIBILITY_ASSESSMENT_NODE_OUTPUT, KeyStrategy.REPLACE);
 			// sql generate节点输出
@@ -164,6 +171,7 @@ public class DataAgentConfiguration implements DisposableBean {
 			keyStrategyHashMap.put(IS_ONLY_NL2SQL, KeyStrategy.REPLACE);
 			// Human Review keys
 			keyStrategyHashMap.put(HUMAN_REVIEW_ENABLED, KeyStrategy.REPLACE);
+			keyStrategyHashMap.put(HUMAN_FEEDBACK_DATA, KeyStrategy.REPLACE);
 			// Final result
 			keyStrategyHashMap.put(RESULT, KeyStrategy.REPLACE);
 			return keyStrategyHashMap;
@@ -411,12 +419,80 @@ public class DataAgentConfiguration implements DisposableBean {
 		}
 	}
 
-	@Bean
+	@Bean(name = "token")
 	public TextSplitter textSplitter(DataAgentProperties properties) {
 		DataAgentProperties.TextSplitter textSplitterProps = properties.getTextSplitter();
-		return new TokenTextSplitter(textSplitterProps.getChunkSize(), textSplitterProps.getMinChunkSizeChars(),
-				textSplitterProps.getMinChunkLengthToEmbed(), textSplitterProps.getMaxNumChunks(),
-				textSplitterProps.isKeepSeparator());
+		DataAgentProperties.TextSplitter.TokenTextSplitterConfig config = textSplitterProps.getToken();
+		return new TokenTextSplitter(textSplitterProps.getChunkSize(), config.getMinChunkSizeChars(),
+				config.getMinChunkLengthToEmbed(), config.getMaxNumChunks(), config.isKeepSeparator());
+	}
+
+	/**
+	 * 递归字符文本分块器
+	 * @param properties 分块配置
+	 * @return RecursiveCharacterTextSplitter实例
+	 */
+	@Bean(name = "recursive")
+	public TextSplitter recursiveTextSplitter(DataAgentProperties properties) {
+		DataAgentProperties.TextSplitter textSplitterProps = properties.getTextSplitter();
+		DataAgentProperties.TextSplitter.RecursiveTextSplitterConfig config = textSplitterProps.getRecursive();
+		// RecursiveCharacterTextSplitter
+		String[] separators = config.getSeparators();
+		if (separators != null && separators.length > 0) {
+			return new RecursiveCharacterTextSplitter(textSplitterProps.getChunkSize(), separators);
+		}
+		else {
+			return new RecursiveCharacterTextSplitter(textSplitterProps.getChunkSize());
+		}
+	}
+
+	/**
+	 * 句子分块器
+	 * @param properties 分块配置
+	 * @return SentenceSplitter实例
+	 */
+	@Bean(name = "sentence")
+	public TextSplitter sentenceSplitter(DataAgentProperties properties) {
+		DataAgentProperties.TextSplitter textSplitterConfig = properties.getTextSplitter();
+		DataAgentProperties.TextSplitter.SentenceTextSplitterConfig sentenceConfig = textSplitterConfig.getSentence();
+
+		return SentenceSplitter.builder()
+			.withChunkSize(textSplitterConfig.getChunkSize())
+			.withSentenceOverlap(sentenceConfig.getSentenceOverlap())
+			.build();
+	}
+
+	/**
+	 * 语义分块器
+	 * @param properties 分块配置
+	 * @param embeddingModel Embedding 模型
+	 * @return SemanticTextSplitter实例
+	 */
+	@Bean(name = "semantic")
+	public TextSplitter semanticSplitter(DataAgentProperties properties, EmbeddingModel embeddingModel) {
+		DataAgentProperties.TextSplitter textSplitterProps = properties.getTextSplitter();
+		DataAgentProperties.TextSplitter.SemanticTextSplitterConfig config = textSplitterProps.getSemantic();
+		return SemanticTextSplitter.builder()
+			.embeddingModel(embeddingModel)
+			.minChunkSize(config.getMinChunkSize())
+			.maxChunkSize(config.getMaxChunkSize())
+			.similarityThreshold(config.getSimilarityThreshold())
+			.build();
+	}
+
+	/**
+	 * 段落分块器
+	 * @param properties 分块配置
+	 * @return ParagraphTextSplitter实例
+	 */
+	@Bean(name = "paragraph")
+	public TextSplitter paragraphSplitter(DataAgentProperties properties) {
+		DataAgentProperties.TextSplitter textSplitterProps = properties.getTextSplitter();
+		DataAgentProperties.TextSplitter.ParagraphTextSplitterConfig config = textSplitterProps.getParagraph();
+		return ParagraphTextSplitter.builder()
+			.chunkSize(textSplitterProps.getChunkSize())
+			.paragraphOverlapChars(config.getParagraphOverlapChars())
+			.build();
 	}
 
 }
