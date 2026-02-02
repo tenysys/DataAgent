@@ -19,7 +19,11 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 
 /**
@@ -38,6 +42,34 @@ public class WebConfig implements WebMvcConfigurer {
 		registry.addResourceHandler(fileStorageProperties.getUrlPrefix() + "/**")
 			.addResourceLocations("file:" + uploadDir + "/")
 			.setCachePeriod(3600);
+		// Spring Boot 3.x的资源处理器配置
+		registry.addResourceHandler("/**")
+				.addResourceLocations(
+						"classpath:/META-INF/resources/",
+						"classpath:/resources/",
+						"classpath:/static/",
+						"classpath:/public/"
+				)
+				.setCachePeriod(3600)
+				.resourceChain(true)
+				.addResolver(new PathResourceResolver() {
+					@Override
+					protected Resource getResource(String resourcePath, Resource location) throws IOException {
+						Resource requestedResource = location.createRelative(resourcePath);
+						// 如果请求的资源存在
+						if (requestedResource.exists() && requestedResource.isReadable()) {
+							return requestedResource;
+						}
+						// 对于API请求，不重定向
+						if (resourcePath.startsWith("api/") ||
+								resourcePath.startsWith("actuator/") ||
+								resourcePath.contains(".")) {
+							return null;
+						}
+						// 否则返回index.html（SPA支持）
+						return new ClassPathResource("/static/index.html");
+					}
+				});
 	}
 
 }

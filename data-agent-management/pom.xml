@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-data-agent-management</artifactId>
-    <name>Spring AI Alibaba DataAgent Management</name>
+    <name>Spring AI Alibaba Data Agent</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
@@ -279,6 +279,7 @@
     </repositories>
 
     <build>
+        <finalName>${project.parent.name}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

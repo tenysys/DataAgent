@@ -1,12 +1,18 @@
 server:
   port: 8065
 
+
 # 存储 DataAgent 业务数据的数据库，并非Agent分析数据的来源
 spring:
+  application:
+    name: data-agent
+  ################# 数据源配置 ###################
   datasource:
-    url: ${DATA_AGENT_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/saa_data_agent?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
-    username: ${DATA_AGENT_DATASOURCE_USERNAME:root}
-    password: ${DATA_AGENT_DATASOURCE_PASSWORD:root}
+    # JDBC 配置
+    # mysql
+    url: jdbc:mysql://198.87.103.132:5506/sophicloud-peixun?useUnicode=true&characterEncoding=UTF-8
+    username: his
+    password: His@9700
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
   sql:

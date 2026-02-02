@@ -221,7 +221,7 @@ public class DatasourceServiceImpl implements DatasourceService {
 
 		// Create query parameters
 		DbQueryParameter queryParam = DbQueryParameter.from(dbConfig);
-		queryParam.setSchema(datasource.getDatabaseName());
+		queryParam.setSchema(dbConfig.getSchema());
 
 		// Query table list
 		Accessor dbAccessor = accessorFactory.getAccessorByDbConfig(dbConfig);
@@ -256,6 +256,7 @@ public class DatasourceServiceImpl implements DatasourceService {
 		else if ("postgresql".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("postgresql");
+			dbConfig.setSchema("public");
 		}
 		else if ("h2".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
@@ -272,9 +273,10 @@ public class DatasourceServiceImpl implements DatasourceService {
 		else {
 			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
 		}
-
 		// Set Schema to the database name of the data source
-		dbConfig.setSchema(datasource.getDatabaseName());
+		if(dbConfig.getSchema() == null){
+			dbConfig.setSchema(datasource.getDatabaseName());
+		}
 
 		return dbConfig;
 	}
