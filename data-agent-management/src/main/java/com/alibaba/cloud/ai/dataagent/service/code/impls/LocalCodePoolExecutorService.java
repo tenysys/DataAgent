@@ -88,8 +88,13 @@ public class LocalCodePoolExecutorService extends AbstractCodePoolExecutorServic
 
 		// 如果有requirements，则先安装依赖
 		if (this.checkProgramExists(pipNames) != null && StringUtils.hasText(request.requirement())) {
+
+			boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+			String nulCmd = isWindows ? "nul" : "/dev/null";
+
 			ProcessBuilder pip = new ProcessBuilder(this.checkProgramExists(pipNames), "install", "--no-cache-dir",
-					"-r", requirementFile.toAbsolutePath().toString(), ">", "/dev/null");
+					"-r", String.format("\"%s\"", requirementFile.toAbsolutePath()), ">", nulCmd);
+
 			Process process = null;
 
 			try {

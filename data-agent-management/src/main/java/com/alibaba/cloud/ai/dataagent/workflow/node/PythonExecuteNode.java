@@ -78,7 +78,7 @@ public class PythonExecuteNode implements NodeAction {
 			int triesCount = StateUtil.getObjectValue(state, PYTHON_TRIES_COUNT, Integer.class, 0);
 
 			CodePoolExecutorService.TaskRequest taskRequest = new CodePoolExecutorService.TaskRequest(pythonCode,
-					objectMapper.writeValueAsString(sqlResults), null);
+					objectMapper.writeValueAsString(sqlResults), "pandas");
 
 			// Run Python code
 			CodePoolExecutorService.TaskResponse taskResponse = this.codePoolExecutor.runTask(taskRequest);

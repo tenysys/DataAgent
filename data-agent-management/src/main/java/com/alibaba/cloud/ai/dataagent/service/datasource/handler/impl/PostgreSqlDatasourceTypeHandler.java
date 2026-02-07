@@ -49,9 +49,9 @@ public class PostgreSqlDatasourceTypeHandler implements DatasourceTypeHandler {
 		String databaseName = datasource.getDatabaseName();
 		if (databaseName != null && databaseName.contains("|")) {
 			String[] parts = databaseName.split("\\|");
-			return parts.length > 1 ? parts[1] : parts[0];
+			return parts.length > 1 ? parts[1] : "public";
 		}
-		return databaseName;
+		return "public";
 	}
 
 }
