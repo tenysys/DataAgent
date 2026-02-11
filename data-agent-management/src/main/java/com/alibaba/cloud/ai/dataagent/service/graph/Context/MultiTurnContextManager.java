@@ -50,6 +50,7 @@ public class MultiTurnContextManager {
 	 * @param userQuestion latest user question
 	 */
 	public void beginTurn(String threadId, String userQuestion) {
+		//流开启,创建PendingTurn,用于内容拼接
 		if (StringUtils.isAnyBlank(threadId, userQuestion)) {
 			return;
 		}
@@ -62,6 +63,7 @@ public class MultiTurnContextManager {
 	 * @param chunk planner streaming chunk
 	 */
 	public void appendPlannerChunk(String threadId, String chunk) {
+		//拼接流输出的内容
 		if (StringUtils.isAnyBlank(threadId, chunk)) {
 			return;
 		}
@@ -76,6 +78,7 @@ public class MultiTurnContextManager {
 	 * @param threadId conversation thread id
 	 */
 	public void finishTurn(String threadId) {
+		//流输出结束后,从pending中移除,结果添加到history中
 		PendingTurn pending = pendingTurns.remove(threadId);
 		if (pending == null) {
 			return;
@@ -102,6 +105,7 @@ public class MultiTurnContextManager {
 	 * @param threadId conversation thread id
 	 */
 	public void discardPending(String threadId) {
+		//取消订阅时,移除正在接受的流
 		pendingTurns.remove(threadId);
 	}
 
@@ -111,6 +115,7 @@ public class MultiTurnContextManager {
 	 * @param threadId conversation thread id
 	 */
 	public void restartLastTurn(String threadId) {
+		//获取最后一次的问题重新生成回答
 		Deque<ConversationTurn> deque = history.get(threadId);
 		if (deque == null || deque.isEmpty()) {
 			return;
@@ -130,6 +135,7 @@ public class MultiTurnContextManager {
 	 * @return formatted history string
 	 */
 	public String buildContext(String threadId) {
+		//构建历史对话上下文
 		Deque<ConversationTurn> deque = history.get(threadId);
 		if (deque == null || deque.isEmpty()) {
 			return "(无)";
@@ -145,7 +151,7 @@ public class MultiTurnContextManager {
 	private static class PendingTurn {
 
 		private final String userQuestion;
-
+		//用于拼接流输出的内容
 		private final StringBuilder planBuilder = new StringBuilder();
 
 		private PendingTurn(String userQuestion) {

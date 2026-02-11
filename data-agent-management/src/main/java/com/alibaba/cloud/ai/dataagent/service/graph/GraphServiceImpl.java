@@ -149,6 +149,7 @@ public class GraphServiceImpl implements GraphService {
 		}
 		Map<String, Object> feedbackData = Map.of("feedback", !graphRequest.isRejectedPlan(), "feedback_content",
 				feedbackContent);
+		//如果用户拒绝执行计划,重新生成上一个问题的答案
 		if (graphRequest.isRejectedPlan()) {
 			multiTurnContextManager.restartLastTurn(threadId);
 		}
@@ -253,6 +254,7 @@ public class GraphServiceImpl implements GraphService {
 	 */
 	private void handleNodeOutput(GraphRequest request, NodeOutput output) {
 		log.debug("Received output: {}", output.getClass().getSimpleName());
+		//jdk16的写法,简化类型转换,StreamingOutput返回流式结果
 		if (output instanceof StreamingOutput streamingOutput) {
 			handleStreamNodeOutput(request, streamingOutput);
 		}
@@ -278,6 +280,7 @@ public class GraphServiceImpl implements GraphService {
 		TextType originType = context.getTextType();
 		TextType textType;
 		boolean isTypeSign = false;
+		//如果originType为null,没有设置文本类型(流输出的第一块内容),chunk和类型标记比对
 		if (originType == null) {
 			textType = TextType.getTypeByStratSign(chunk);
 			if (textType != TextType.TEXT) {
@@ -286,6 +289,7 @@ public class GraphServiceImpl implements GraphService {
 			context.setTextType(textType);
 		}
 		else {
+			//存在文本类型,判断是结尾标记,还是新的文本类型
 			textType = TextType.getType(originType, chunk);
 			if (textType != originType) {
 				isTypeSign = true;
@@ -295,6 +299,7 @@ public class GraphServiceImpl implements GraphService {
 		// 文本标记符号不返回给前端
 		if (!isTypeSign) {
 			if (PlannerNode.class.getSimpleName().equals(node)) {
+				//拼接流输出内容
 				multiTurnContextManager.appendPlannerChunk(threadId, chunk);
 			}
 			GraphNodeResponse response = GraphNodeResponse.builder()
