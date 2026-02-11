@@ -155,8 +155,4 @@ public final class Constant {
 	public static final String STREAM_EVENT_COMPLETE = "complete";
 
 	public static final String STREAM_EVENT_ERROR = "error";
-
-	// Dify 知识库标记
-	public static final String DIFY_KNOWLEDGE = "difyKnowledge";
-
 }

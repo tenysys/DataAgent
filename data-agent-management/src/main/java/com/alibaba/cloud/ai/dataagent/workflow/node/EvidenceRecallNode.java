@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.dataagent.workflow.node;
 
+import com.alibaba.cloud.ai.dataagent.constant.Constant;
 import com.alibaba.cloud.ai.dataagent.constant.DocumentMetadataConstant;
 import com.alibaba.cloud.ai.dataagent.dto.dify.DifyRetrieveResponse;
 import com.alibaba.cloud.ai.dataagent.entity.AgentDatasetBinding;
@@ -229,7 +230,6 @@ public class EvidenceRecallNode implements NodeAction {
 
 								// 构建元数据
 								Map<String, Object> metadata = new HashMap<>();
-								metadata.put(DIFY_KNOWLEDGE, true);
 								metadata.put("difyDatasetId", binding.getDatasetId());
 								metadata.put("difyDatasetName", binding.getDatasetName());
 								metadata.put("score", record.getScore());
