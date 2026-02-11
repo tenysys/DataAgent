@@ -26,6 +26,8 @@ public final class Constant {
 
 	public static final String PROJECT_PROPERTIES_PREFIX = "spring.ai.alibaba.data-agent";
 
+	public static final String DIFY_PREFIX = "nrec.dify";
+
 	public static final String INPUT_KEY = "input";
 
 	public static final String AGENT_ID = "agentId";
@@ -153,5 +155,8 @@ public final class Constant {
 	public static final String STREAM_EVENT_COMPLETE = "complete";
 
 	public static final String STREAM_EVENT_ERROR = "error";
+
+	// Dify 知识库标记
+	public static final String DIFY_KNOWLEDGE = "difyKnowledge";
 
 }

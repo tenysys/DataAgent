@@ -244,6 +244,24 @@ create table if not exists agent_datasource_tables
     comment '某个智能体某个数据源所选中的数据表';
 
 
+-- 智能体知识库绑定表
+CREATE TABLE IF NOT EXISTS agent_dataset_binding (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    agent_id INT NOT NULL COMMENT '智能体ID',
+    dataset_id VARCHAR(64) NOT NULL COMMENT '知识库ID',
+    dataset_name VARCHAR(256) COMMENT '知识库名称',
+    indexing_technique VARCHAR(64) COMMENT '索引方式',
+    search_method VARCHAR(64) COMMENT '检索方式',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_agent_dataset (agent_id, dataset_id),
+    -- 为agent_id创建索引，加速按智能体查询
+    INDEX idx_agent_id (agent_id),
+    -- 为dataset_id创建索引，加速按知识库查询
+    INDEX idx_dataset_id (dataset_id),
+    -- 复合索引，加速智能体知识库绑定查询
+    INDEX idx_agent_dataset (agent_id, dataset_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体知识库绑定表';
+
 -- 模型配置表
 CREATE TABLE IF NOT EXISTS `model_config` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

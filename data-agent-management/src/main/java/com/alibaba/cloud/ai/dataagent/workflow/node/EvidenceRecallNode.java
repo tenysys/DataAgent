@@ -16,12 +16,17 @@
 package com.alibaba.cloud.ai.dataagent.workflow.node;
 
 import com.alibaba.cloud.ai.dataagent.constant.DocumentMetadataConstant;
+import com.alibaba.cloud.ai.dataagent.dto.dify.DifyRetrieveResponse;
+import com.alibaba.cloud.ai.dataagent.entity.AgentDatasetBinding;
 import com.alibaba.cloud.ai.dataagent.enums.KnowledgeType;
 import com.alibaba.cloud.ai.dataagent.enums.TextType;
 import com.alibaba.cloud.ai.dataagent.dto.prompt.EvidenceQueryRewriteDTO;
 import com.alibaba.cloud.ai.dataagent.entity.AgentKnowledge;
+import com.alibaba.cloud.ai.dataagent.mapper.AgentDatasetBindingMapper;
 import com.alibaba.cloud.ai.dataagent.mapper.AgentKnowledgeMapper;
 import com.alibaba.cloud.ai.dataagent.prompt.PromptHelper;
+import com.alibaba.cloud.ai.dataagent.qo.DifyRetrieveRequest;
+import com.alibaba.cloud.ai.dataagent.service.dify.DifyApiService;
 import com.alibaba.cloud.ai.dataagent.service.llm.LlmService;
 import com.alibaba.cloud.ai.dataagent.service.vectorstore.AgentVectorStoreService;
 import com.alibaba.cloud.ai.dataagent.util.*;
@@ -31,6 +36,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Component;
@@ -57,6 +63,10 @@ public class EvidenceRecallNode implements NodeAction {
 	private final JsonParseUtil jsonParseUtil;
 
 	private final AgentKnowledgeMapper agentKnowledgeMapper;
+
+	private final DifyApiService difyApiService;
+
+	private final AgentDatasetBindingMapper agentDatasetBindingMapper;
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -123,7 +133,7 @@ public class EvidenceRecallNode implements NodeAction {
 
 			// 构建证据内容
 			String evidence = buildFormattedEvidenceContent(retrievalResult.businessTermDocuments(),
-					retrievalResult.agentKnowledgeDocuments());
+					retrievalResult.agentKnowledgeDocuments(), retrievalResult.difyDocuments());
 			log.info("Evidence content built as follows \n {} \n", evidence);
 			// 输出证据内容
 			outputEvidenceContent(retrievalResult.allDocuments(), sink);
@@ -161,42 +171,149 @@ public class EvidenceRecallNode implements NodeAction {
 			.stream()
 			.toList();
 
+		// 获取 Dify 知识库文档
+		List<Document> difyDocuments = retrieveFromDifyDatasets(agentId, standaloneQuery);
+
 		// 合并所有证据文档
 		List<Document> allDocuments = new ArrayList<>();
 		if (!businessTermDocuments.isEmpty())
 			allDocuments.addAll(businessTermDocuments);
 		if (!agentKnowledgeDocuments.isEmpty())
 			allDocuments.addAll(agentKnowledgeDocuments);
+		if (!difyDocuments.isEmpty())
+			allDocuments.addAll(difyDocuments);
 
 		// 添加文档检索日志
-		log.info("Retrieved documents for agent {}: {} business term docs, {} agent knowledge docs, total {} docs",
-				agentId, businessTermDocuments.size(), agentKnowledgeDocuments.size(), allDocuments.size());
+		log.info("Retrieved documents for agent {}: {} business term docs, {} agent knowledge docs, {} dify docs, total {} docs",
+				agentId, businessTermDocuments.size(), agentKnowledgeDocuments.size(), difyDocuments.size(), allDocuments.size());
 
-		return new DocumentRetrievalResult(businessTermDocuments, agentKnowledgeDocuments, allDocuments);
+		return new DocumentRetrievalResult(businessTermDocuments, agentKnowledgeDocuments, difyDocuments, allDocuments);
+	}
+
+	/**
+	 * 从 Dify 知识库检索相关文档
+	 *
+	 * @param agentId 智能体ID
+	 * @param query   检索查询
+	 * @return Dify 知识库文档列表
+	 */
+	private List<Document> retrieveFromDifyDatasets(String agentId, String query) {
+		try {
+			// 将 String agentId 转换为 Integer
+			Integer agentIdInt = Integer.parseInt(agentId);
+
+			// 获取智能体绑定的 Dify 知识库列表
+			List<AgentDatasetBinding> bindings = agentDatasetBindingMapper.selectByAgentId(agentIdInt);
+
+			if (bindings == null || bindings.isEmpty()) {
+				log.debug("No Dify datasets bound to agent: {}", agentId);
+				return List.of();
+			}
+
+			List<Document> difyDocuments = new ArrayList<>();
+
+			// 循环调用 Dify 检索接口并合并结果
+			for (AgentDatasetBinding binding : bindings) {
+				try {
+					// 构建 Dify 检索请求
+					DifyRetrieveRequest request = new DifyRetrieveRequest(query);
+
+					// 调用 Dify API 检索
+					DifyRetrieveResponse response = difyApiService.retrieveFromDataset(binding.getDatasetId(), request);
+
+					if (response != null && response.getRecords() != null) {
+						// 提取 segment.content 转换为 Document 对象
+						for (DifyRetrieveResponse.RetrieveRecord record : response.getRecords()) {
+							if (record.getSegment() != null && record.getSegment().getContent() != null) {
+								String content = record.getSegment().getContent();
+
+								// 构建元数据
+								Map<String, Object> metadata = new HashMap<>();
+								metadata.put(DIFY_KNOWLEDGE, true);
+								metadata.put("difyDatasetId", binding.getDatasetId());
+								metadata.put("difyDatasetName", binding.getDatasetName());
+								metadata.put("score", record.getScore());
+
+								// 添加文档来源信息
+								if (record.getSegment().getDocument() != null) {
+									metadata.put("difyDocumentId", record.getSegment().getDocument().getId());
+									metadata.put("difyDocumentName", record.getSegment().getDocument().getName());
+								}
+
+								// 创建 Document 对象
+								Document document = new Document(content, metadata);
+								difyDocuments.add(document);
+							}
+						}
+					}
+
+					log.debug("Retrieved {} documents from Dify dataset: {}",
+							response != null && response.getRecords() != null ? response.getRecords().size() : 0,
+							binding.getDatasetId());
+				}
+				catch (Exception e) {
+					log.warn("Failed to retrieve from Dify dataset: {}, error: {}", binding.getDatasetId(), e.getMessage());
+					// 继续处理其他知识库
+				}
+			}
+
+			log.info("Successfully retrieved {} documents from {} Dify datasets for agent: {}",
+					difyDocuments.size(), bindings.size(), agentId);
+
+			return difyDocuments;
+		}
+		catch (NumberFormatException e) {
+			log.error("Invalid agent ID format: {}", agentId, e);
+			return List.of();
+		}
+		catch (Exception e) {
+			log.error("Error retrieving documents from Dify datasets for agent: {}", agentId, e);
+			return List.of();
+		}
 	}
 
 	// 构建证据内容，输出格式
 	// 1. [来源: 2025Q3报告-销售数据.md] ...华东地区的增长主要来自于核心用户...
 	// 2. [来源: 客服FAQ] Q: 退款怎么算? A: 只统计已入库退货...
 	private String buildFormattedEvidenceContent(List<Document> businessTermDocuments,
-			List<Document> agentKnowledgeDocuments) {
+			List<Document> agentKnowledgeDocuments, List<Document> difyDocuments) {
 		// 构建业务知识内容
 		String businessKnowledgeContent = buildBusinessKnowledgeContent(businessTermDocuments);
 
 		// 构建智能体知识内容
 		String agentKnowledgeContent = buildAgentKnowledgeContent(agentKnowledgeDocuments);
 
+		// 构建 Dify 知识库内容
+		String difyKnowledgeContent = buildDifyKnowledgeContent(difyDocuments);
+
 		// 使用PromptHelper的模板方法进行渲染
 		String businessPrompt = PromptHelper.buildBusinessKnowledgePrompt(businessKnowledgeContent);
 		String agentPrompt = PromptHelper.buildAgentKnowledgePrompt(agentKnowledgeContent);
+		String difyPrompt = PromptHelper.buildDifyKnowledgePrompt(difyKnowledgeContent);
 
 		// 添加证据构建日志
-		log.info("Building evidence content: business knowledge length {}, agent knowledge length {}",
-				businessKnowledgeContent.length(), agentKnowledgeContent.length());
+		log.info("Building evidence content: business knowledge length {}, agent knowledge length {}, dify knowledge length {}",
+				businessKnowledgeContent.length(), agentKnowledgeContent.length(), difyKnowledgeContent.length());
 
-		// 拼接业务知识和智能体知识作为证据
-		return businessKnowledgeContent.isEmpty() && agentKnowledgeContent.isEmpty() ? "无"
-				: businessPrompt + (agentKnowledgeContent.isEmpty() ? "" : "\n\n" + agentPrompt);
+		// 拼接业务知识、智能体知识和 Dify 知识作为证据
+		StringBuilder result = new StringBuilder();
+		if (StringUtils.isNotBlank(businessPrompt)) {
+			result.append(businessPrompt);
+		}
+		if (StringUtils.isNotBlank(agentPrompt)) {
+			if (!result.isEmpty()) {
+				result.append("\n\n");
+			}
+			result.append(agentPrompt);
+		}
+		if (StringUtils.isNotBlank(difyPrompt)) {
+			if (!result.isEmpty()) {
+				result.append("\n\n");
+			}
+			result.append(difyPrompt);
+		}
+
+		return result.isEmpty() ? "无" : result.toString();
 	}
 
 	private String buildBusinessKnowledgeContent(List<Document> businessTermDocuments) {
@@ -233,6 +350,48 @@ public class EvidenceRecallNode implements NodeAction {
 			else {
 				processDocumentKnowledge(doc, i, result);
 			}
+		}
+
+		return result.toString();
+	}
+
+	/**
+	 * 构建 Dify 知识库内容
+	 *
+	 * @param difyDocuments Dify 知识库文档列表
+	 * @return Dify 知识库内容
+	 */
+	private String buildDifyKnowledgeContent(List<Document> difyDocuments) {
+		if (difyDocuments.isEmpty()) {
+			return "";
+		}
+
+		StringBuilder result = new StringBuilder();
+
+		for (int i = 0; i < difyDocuments.size(); i++) {
+			Document doc = difyDocuments.get(i);
+			Map<String, Object> metadata = doc.getMetadata();
+			String content = doc.getText();
+
+			// 获取来源信息
+			String datasetName = (String) metadata.get("difyDatasetName");
+			String documentName = (String) metadata.get("difyDocumentName");
+
+			// 构建来源信息
+			StringBuilder source = new StringBuilder();
+			if (datasetName != null && !datasetName.isEmpty()) {
+				source.append(datasetName);
+				if (documentName != null && !documentName.isEmpty()) {
+					source.append("-").append(documentName);
+				}
+			}
+			else {
+				source.append("Dify知识库");
+			}
+
+			result.append(i + 1).append(". [来源: ");
+			result.append(source);
+			result.append("] ").append(content).append("\n");
 		}
 
 		return result.toString();
@@ -342,7 +501,7 @@ public class EvidenceRecallNode implements NodeAction {
 	}
 
 	private record DocumentRetrievalResult(List<Document> businessTermDocuments, List<Document> agentKnowledgeDocuments,
-			List<Document> allDocuments) {
+			List<Document> difyDocuments, List<Document> allDocuments) {
 	}
 
 	private String extractStandaloneQuery(String llmOutput) {

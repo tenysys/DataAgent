@@ -192,6 +192,21 @@ public class PromptHelper {
 		return PromptConstant.getAgentKnowledgePromptTemplate().render(params);
 	}
 
+	/**
+	 * 构建 Dify 知识库提示词
+	 *
+	 * @param difyKnowledge Dify 知识库内容
+	 * @return Dify 知识库提示词
+	 */
+	public static String buildDifyKnowledgePrompt(String difyKnowledge) {
+		Map<String, Object> params = new HashMap<>();
+		if (StringUtils.isNotBlank(difyKnowledge))
+			params.put("difyKnowledge", difyKnowledge);
+		else
+			params.put("difyKnowledge", "无");
+		return PromptConstant.getDifyKnowledgePromptTemplate().render(params);
+	}
+
 	public static String buildSemanticModelPrompt(List<SemanticModel> semanticModels) {
 		Map<String, Object> params = new HashMap<>();
 		String semanticModel = CollectionUtils.isEmpty(semanticModels) ? ""

@@ -1,0 +1,6 @@
+### Dify 外部知识库 (External Knowledge base)
+以下是从 Dify 知识库中检索到的**外部知识片段**。
+这些信息提供了外部系统的业务背景和规则，请将其作为决策和推理的参考依据。
+
+#### Dify 知识库片段
+{difyKnowledge}
