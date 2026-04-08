@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SophicAgent 智能体商店</title>
+  <style>
+    :root {
+      --bg: #edf3f9;
+      --panel: #ffffff;
+      --panel-soft: #f4f8fc;
+      --panel-tint: #eef5ff;
+      --line: #dbe5f0;
+      --text: #162235;
+      --muted: #66778d;
+      --nav: #102844;
+      --nav-2: #173a5f;
+      --brand: #2f7ff0;
+      --brand-soft: rgba(47, 127, 240, 0.14);
+      --brand-deep: #1d5fc5;
+      --accent: #16b38f;
+      --accent-soft: rgba(19, 179, 139, 0.14);
+      --warn: #f59f00;
+      --card: linear-gradient(180deg, #5f74a7 0%, #4c628f 100%);
+      --shadow: 0 24px 48px rgba(20, 40, 68, 0.08);
+      --shadow-soft: 0 12px 28px rgba(20, 40, 68, 0.06);
+      --radius-xl: 26px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(47, 127, 240, 0.12), transparent 18%),
+        radial-gradient(circle at 85% 12%, rgba(22, 179, 143, 0.08), transparent 16%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+    }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: linear-gradient(90deg, var(--nav) 0%, var(--nav-2) 100%);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(18, 43, 69, 0.18);
+      position: relative;
+      z-index: 3;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #62b3ff, #2f7ff0);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: .04em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+    }
+
+    .brand strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .nav a {
+      color: rgba(255, 255, 255, 0.82);
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 15px;
+      transition: .16s ease;
+      position: relative;
+    }
+
+    .nav-dropdown {
+      position: relative;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 4px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #74bbff, #d5ebff);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      min-width: 180px;
+      padding: 8px;
+      border-radius: 14px;
+      background: rgba(17, 33, 53, 0.98);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 34px rgba(6,16,28,.28);
+      display: none;
+      z-index: 10;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: transparent;
+    }
+
+    .dropdown-menu a:hover,
+    .dropdown-menu a.active {
+      background: rgba(255,255,255,.08);
+    }
+
+    .nav-dropdown:hover .dropdown-menu {
+      display: block;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .crumb {
+      padding: 9px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.10);
+      font-size: 14px;
+      color: rgba(255,255,255,.88);
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #62b3ff, #2f7ff0);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(47, 127, 240, 0.28);
+    }
+
+    .page {
+      padding: 22px 20px 26px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 28px;
+      border-radius: var(--radius-xl);
+      background:
+        radial-gradient(circle at top right, rgba(47, 127, 240, 0.16), transparent 24%),
+        linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      right: -80px;
+      top: -120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.55), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      margin: 0 0 18px;
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      line-height: 1.1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .hero-card {
+      position: relative;
+      padding: 16px 16px 18px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+
+    .hero-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 32px rgba(20, 40, 68, 0.08);
+      border-color: rgba(47, 127, 240, 0.18);
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--brand), #63a4ff);
+    }
+
+    .hero-card.accent::before {
+      background: linear-gradient(90deg, var(--accent), #53d6b0);
+    }
+
+    .hero-card.warn::before {
+      background: linear-gradient(90deg, var(--warn), #ffc95c);
+    }
+
+    .hero-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .hero-card strong {
+      font-size: 26px;
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    .hero-trend {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hero-trend em {
+      font-style: normal;
+      font-size: 12px;
+      color: var(--brand-deep);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .hero-bar {
+      flex: 1;
+      height: 7px;
+      border-radius: 999px;
+      background: #e8eff8;
+      overflow: hidden;
+    }
+
+    .hero-bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand), #6db0ff);
+    }
+
+    .tabs-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .tabs-wrap.inline {
+      margin-bottom: 0;
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .tab {
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: linear-gradient(180deg, rgba(47, 127, 240, 0.16), rgba(47, 127, 240, 0.10));
+      color: var(--brand);
+      box-shadow: inset 0 0 0 1px rgba(47, 127, 240, 0.10);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .content-panel,
+    .filter-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .content-panel {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .content-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(248, 251, 255, 0.92) 0%, rgba(244, 248, 252, 0.92) 100%);
+      border: 1px solid rgba(47, 127, 240, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-top h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .section-top p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .control {
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.94);
+      padding: 0 12px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease;
+    }
+
+    .control:focus {
+      border-color: rgba(44, 123, 229, .42);
+      box-shadow: 0 0 0 4px rgba(44, 123, 229, .10);
+    }
+
+    .btn {
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.94);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand), #4a90ff);
+      color: #fff;
+      border: 0;
+      box-shadow: 0 12px 22px rgba(47, 127, 240, 0.22);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 20px rgba(20, 40, 68, 0.08);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      position: relative;
+      min-height: 250px;
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--card);
+      color: #fff;
+      box-shadow: 0 18px 34px rgba(66, 85, 127, 0.18);
+      overflow: hidden;
+      transition: .18s ease;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 22px 40px rgba(66, 85, 127, 0.24);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      right: -50px;
+      top: -60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .state-badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.18);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .subline {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 4px;
+      color: rgba(255,255,255,.76);
+      font-size: 13px;
+    }
+
+    .desc {
+      margin: 10px 0 14px;
+      color: rgba(255,255,255,.90);
+      line-height: 1.72;
+      font-size: 13px;
+    }
+
+    .card-kpis {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card-kpi {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(4px);
+    }
+
+    .card-kpi span {
+      display: block;
+      font-size: 12px;
+      color: rgba(255,255,255,.74);
+      margin-bottom: 4px;
+    }
+
+    .card-kpi strong {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.94);
+      color: #44536d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .card-foot {
+      margin-top: auto;
+      padding-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255,255,255,.12);
+    }
+
+    .metric {
+      color: rgba(255,255,255,.82);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .filter-panel {
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(251,253,255,.96) 100%);
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .filter-panel::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -80px;
+      bottom: -90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(47, 127, 240, 0.08), transparent 70%);
+      pointer-events: none;
+    }
+
+    .filter-panel h3 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .filter-group {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #edf2f7;
+    }
+
+    .filter-group label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .segmented {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .segmented button {
+      padding: 9px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .segmented button.active {
+      background: linear-gradient(180deg, rgba(47, 127, 240, 0.16), rgba(47, 127, 240, 0.10));
+      color: var(--brand);
+      border-color: rgba(44, 123, 229, .18);
+    }
+
+    .filter-group:last-of-type {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .filter-footer {
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (max-width: 1380px) {
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 1024px) {
+      .grid,
+      .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .content-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .content-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .nav { display: none; }
+      .grid,
+      .hero-stats { grid-template-columns: 1fr; }
+      .brand strong { font-size: 22px; }
+      .topbar {
+        height: auto;
+        padding: 14px 18px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .content-toolbar,
+      .toolbar-actions { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">NR</div>
+      <strong>SophicAgent</strong>
+    </div>
+    <nav class="nav">
+      <a href="#">运行时</a>
+      <div class="nav-dropdown">
+        <a class="active" href="#">智能体</a>
+        <div class="dropdown-menu">
+          <a href="#">通用智能体</a>
+          <a class="active" href="#">专用智能体</a>
+        </div>
+      </div>
+      <a href="#">设计器</a>
+      <a href="#">能力组件</a>
+      <a href="#">框架治理</a>
+    </nav>
+    <div class="user">
+      <div class="crumb">智能体 / 专用智能体</div>
+      <div class="avatar">U</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <h1>专用智能体</h1>
+      <div class="hero-stats">
+        <div class="hero-card">
+          <span>应用数量</span>
+          <strong>64</strong>
+          <div class="hero-trend">
+            <em>占比 83%</em>
+            <div class="hero-bar"><i style="width:83%"></i></div>
+          </div>
+        </div>
+        <div class="hero-card accent">
+          <span>高代码数量</span>
+          <strong>13</strong>
+          <div class="hero-trend">
+            <em>占比 17%</em>
+            <div class="hero-bar"><i style="width:17%; background:linear-gradient(90deg, var(--accent), #53d6b0)"></i></div>
+          </div>
+        </div>
+        <div class="hero-card">
+          <span>应用周新增量</span>
+          <strong>6</strong>
+          <div class="hero-trend">
+            <em>较上周 +2</em>
+            <div class="hero-bar"><i style="width:62%"></i></div>
+          </div>
+        </div>
+        <div class="hero-card accent">
+          <span>高代码周新增量</span>
+          <strong>2</strong>
+          <div class="hero-trend">
+            <em>较上周 +1</em>
+            <div class="hero-bar"><i style="width:38%; background:linear-gradient(90deg, var(--accent), #53d6b0)"></i></div>
+          </div>
+        </div>
+        <div class="hero-card warn">
+          <span>总使用量</span>
+          <strong>8,426</strong>
+          <div class="hero-trend">
+            <em>周环比 +14%</em>
+            <div class="hero-bar"><i style="width:74%; background:linear-gradient(90deg, var(--warn), #ffc95c)"></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="content-panel">
+        <div class="content-head">
+          <div class="tabs-wrap inline">
+            <div class="tabs">
+              <button class="tab active">应用</button>
+              <button class="tab">高代码</button>
+            </div>
+          </div>
+          <div class="content-toolbar">
+            <select class="control"><option>排序：最近更新</option></select>
+          </div>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">◈</div>
+                <div>
+                  <h3>行业智能问数</h3>
+                  <div class="subline"><span>负责人：张三</span><span>V1.0</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">配置业务数据库、知识点和 Prompt，实现通过自然语言快速获取目标数据，适合运营分析和业务问数场景。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>2,148</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+86</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">经营分析部</span>
+              <span class="pill">问数</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 623</span>
+              <span class="metric">版本 3</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">◎</div>
+                <div>
+                  <h3>设备告警助手</h3>
+                  <div class="subline"><span>负责人：李四</span><span>V2.1</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">面向设备运行场景，聚合告警、工单和设备履历信息，支持告警摘要、原因定位和处理建议生成。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>1,632</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+54</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">设备中心</span>
+              <span class="pill">告警</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 412</span>
+              <span class="metric">版本 5</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">✦</div>
+                <div>
+                  <h3>调度分析助手</h3>
+                  <div class="subline"><span>负责人：王五</span><span>V1.4</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">结合调度策略、历史事件和知识检索能力，输出面向调度分析的结构化结论与解释建议。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>968</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+31</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">调度中心</span>
+              <span class="pill">分析</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 288</span>
+              <span class="metric">版本 2</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">◉</div>
+                <div>
+                  <h3>运维知识助手</h3>
+                  <div class="subline"><span>负责人：赵六</span><span>V1.7</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">基于知识库和运维文档构建专用问答助手，面向故障处置、巡检规范和标准流程检索提供辅助能力。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>1,486</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+63</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">运维中心</span>
+              <span class="pill">知识库</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 501</span>
+              <span class="metric">版本 4</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">◇</div>
+                <div>
+                  <h3>故障研判助手</h3>
+                  <div class="subline"><span>负责人：孙七</span><span>V0.9</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">支持结合事件数据、日志和知识片段进行故障归因判断，并产出带依据的研判建议与后续动作提示。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>344</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+17</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">故障分析组</span>
+              <span class="pill">研判</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 129</span>
+              <span class="metric">版本 1</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">✧</div>
+                <div>
+                  <h3>经营报表助手</h3>
+                  <div class="subline"><span>负责人：周八</span><span>V2.0</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">围绕经营分析和报表生成场景，支持指标查询、图表生成和自然语言摘要，适合管理侧快速浏览。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>1,129</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+42</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">经营分析部</span>
+              <span class="pill">报表</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 367</span>
+              <span class="metric">版本 6</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">◌</div>
+                <div>
+                  <h3>巡检策略助手</h3>
+                  <div class="subline"><span>负责人：吴九</span><span>V1.2</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">根据巡检场景、设备类型和历史经验提供巡检策略建议，支持对接知识库与标准操作文档。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>587</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+25</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">检修中心</span>
+              <span class="pill">巡检</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 194</span>
+              <span class="metric">版本 2</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <div class="card-icon">▣</div>
+                <div>
+                  <h3>数据治理助手</h3>
+                  <div class="subline"><span>负责人：郑十</span><span>V1.1</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="desc">辅助业务识别主数据、指标口径与字段说明，服务于数据源配置、语义建模和数据治理场景。</div>
+            <div class="card-kpis">
+              <div class="card-kpi"><span>总使用量</span><strong>532</strong></div>
+              <div class="card-kpi"><span>周新增</span><strong>+19</strong></div>
+            </div>
+            <div class="chips">
+              <span class="pill">应用</span>
+              <span class="pill">数据平台组</span>
+              <span class="pill">治理</span>
+            </div>
+            <div class="card-foot">
+              <span class="metric">本周使用 152</span>
+              <span class="metric">版本 3</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <aside class="filter-panel">
+        <h3>筛选条件</h3>
+
+        <div class="filter-group">
+          <label>名称</label>
+          <input class="control" placeholder="请输入名称关键字" />
+        </div>
+
+        <div class="filter-group">
+          <label>类型</label>
+          <div class="segmented">
+            <button class="active">agent</button>
+            <button>workflow</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>部门</label>
+          <select class="control">
+            <option>请选择部门</option>
+            <option>经营分析部</option>
+            <option>调度中心</option>
+            <option>设备中心</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>标签</label>
+          <select class="control">
+            <option>请选择标签</option>
+            <option>问数</option>
+            <option>告警</option>
+            <option>知识库</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>负责人</label>
+          <select class="control">
+            <option>全部负责人</option>
+            <option>张三</option>
+            <option>李四</option>
+            <option>王五</option>
+          </select>
+        </div>
+
+        <div class="filter-footer">
+          <button class="btn primary">查询</button>
+          <button class="btn">重置条件</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

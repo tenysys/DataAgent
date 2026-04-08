@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SophicAgent 智能体详情</title>
+  <style>
+    :root {
+      --bg: #edf3f9;
+      --panel: #ffffff;
+      --panel-soft: #f4f8fc;
+      --panel-tint: #eef5ff;
+      --line: #dbe5f0;
+      --text: #162235;
+      --muted: #66778d;
+      --nav: #102844;
+      --nav-2: #173a5f;
+      --brand: #2f7ff0;
+      --brand-soft: rgba(47, 127, 240, 0.14);
+      --brand-deep: #1d5fc5;
+      --accent: #16b38f;
+      --shadow: 0 24px 48px rgba(20, 40, 68, 0.08);
+      --shadow-soft: 0 12px 28px rgba(20, 40, 68, 0.06);
+      --radius-xl: 26px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(47, 127, 240, 0.12), transparent 18%),
+        radial-gradient(circle at 85% 12%, rgba(22, 179, 143, 0.08), transparent 16%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+    }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: linear-gradient(90deg, var(--nav) 0%, var(--nav-2) 100%);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(18, 43, 69, 0.18);
+      position: relative;
+      z-index: 3;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #62b3ff, #2f7ff0);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: .04em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+    }
+
+    .brand strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .nav a {
+      color: rgba(255, 255, 255, 0.82);
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 15px;
+      transition: .16s ease;
+      position: relative;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 4px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #74bbff, #d5ebff);
+    }
+
+    .nav-dropdown {
+      position: relative;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      min-width: 180px;
+      padding: 8px;
+      border-radius: 14px;
+      background: rgba(17, 33, 53, 0.98);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 34px rgba(6,16,28,.28);
+      display: none;
+      z-index: 10;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: transparent;
+    }
+
+    .dropdown-menu a:hover,
+    .dropdown-menu a.active {
+      background: rgba(255,255,255,.08);
+    }
+
+    .nav-dropdown:hover .dropdown-menu {
+      display: block;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .crumb {
+      padding: 9px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.10);
+      font-size: 14px;
+      color: rgba(255,255,255,.88);
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #62b3ff, #2f7ff0);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(47, 127, 240, 0.28);
+    }
+
+    .page {
+      padding: 22px 20px 28px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .header-card {
+      padding: 22px 24px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, #324d80 0%, #3d588d 100%);
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .header-card h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: .01em;
+    }
+
+    .header-card p {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,.78);
+      font-size: 14px;
+    }
+
+    .header-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .meta-pill {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.12);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .detail-panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(250,252,255,.98) 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 22px;
+      background: linear-gradient(180deg, rgba(248,251,255,.92) 0%, rgba(243,248,253,.92) 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-top strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .panel-top span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .version-select,
+    .field-control,
+    .feedback-box {
+      font: inherit;
+    }
+
+    .btn {
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.94);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: .16s ease;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand), #4a90ff);
+      color: #fff;
+      border: 0;
+      box-shadow: 0 12px 22px rgba(47, 127, 240, 0.22);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 20px rgba(20, 40, 68, 0.08);
+    }
+
+    .version-select {
+      height: 40px;
+      min-width: 120px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.94);
+      padding: 0 12px;
+      color: var(--text);
+    }
+
+    .detail-body {
+      padding: 24px 22px 26px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .section-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .section-card .section-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid #edf2f7;
+      background: linear-gradient(180deg, #f8fbff 0%, #f4f8fc 100%);
+    }
+
+    .section-head strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .section-head span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .section-body {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .desc-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .desc-row {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .desc-row label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      padding-top: 10px;
+    }
+
+    .desc-text {
+      min-height: 44px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      color: #324154;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .io-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .io-row {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .field-pair {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .field-key {
+      padding: 12px 16px;
+      background: linear-gradient(180deg, #f1f5fa 0%, #edf2f7 100%);
+      color: #43536c;
+      font-weight: 700;
+      border-right: 1px solid var(--line);
+    }
+
+    .field-value {
+      padding: 12px 16px;
+      color: #324154;
+    }
+
+    .config-table {
+      display: grid;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .config-row {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      min-height: 72px;
+      border-top: 1px solid #edf2f7;
+    }
+
+    .config-row:first-child {
+      border-top: 0;
+    }
+
+    .config-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 12px;
+      background: linear-gradient(180deg, #f1f5fa 0%, #edf2f7 100%);
+      color: #43536c;
+      font-weight: 700;
+      border-right: 1px solid var(--line);
+    }
+
+    .config-content {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      color: #324154;
+      line-height: 1.7;
+    }
+
+    .config-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--panel-tint);
+      border: 1px solid rgba(47, 127, 240, 0.12);
+      color: var(--brand-deep);
+      font-weight: 700;
+    }
+
+    .link-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .link-meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .link-meta strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .link-url {
+      display: block;
+      color: var(--brand-deep);
+      font-size: 13px;
+      line-height: 1.7;
+      word-break: break-all;
+    }
+
+    .btn.ghost {
+      background: var(--panel-tint);
+      color: var(--brand-deep);
+      border-color: rgba(47, 127, 240, 0.14);
+    }
+
+    .info-side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .stats-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stats-card strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-item {
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #f8fbff 0%, #f2f7fd 100%);
+      border: 1px solid var(--line);
+    }
+
+    .stat-item span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-item strong {
+      margin: 0;
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .feedback-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .feedback-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid #edf2f7;
+      background: linear-gradient(180deg, #f8fbff 0%, #f4f8fc 100%);
+    }
+
+    .feedback-head strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .feedback-head span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .feedback-body {
+      padding: 18px;
+    }
+
+    .feedback-box {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbfe 100%);
+      color: #324154;
+      outline: none;
+      line-height: 1.8;
+    }
+
+    .feedback-box:focus {
+      border-color: rgba(47, 127, 240, .32);
+      box-shadow: 0 0 0 4px rgba(47, 127, 240, .10);
+    }
+
+    .feedback-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 1180px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .header-card,
+      .panel-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .header-meta,
+      .panel-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .nav { display: none; }
+      .topbar {
+        height: auto;
+        padding: 14px 18px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .desc-row,
+      .io-row,
+      .field-pair,
+      .config-row,
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .config-label {
+        justify-content: flex-start;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .link-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">NR</div>
+      <strong>SophicAgent</strong>
+    </div>
+    <nav class="nav">
+      <a href="#">运行时</a>
+      <div class="nav-dropdown">
+        <a class="active" href="#">智能体</a>
+        <div class="dropdown-menu">
+          <a href="#">通用智能体</a>
+          <a class="active" href="#">专用智能体</a>
+        </div>
+      </div>
+      <a href="#">设计器</a>
+      <a href="#">能力组件</a>
+      <a href="#">框架治理</a>
+    </nav>
+    <div class="user">
+      <div class="crumb">智能体 / 专用智能体</div>
+      <div class="avatar">U</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="header-card">
+      <div>
+        <h1>智能体详情 / 行业智能问数</h1>
+        <p>面向自然语言问数场景，统一展示输入输出说明、运行配置和使用反馈。</p>
+      </div>
+      <div class="header-meta">
+        <div class="meta-pill">应用</div>
+        <div class="meta-pill">负责人：张三</div>
+        <div class="meta-pill">版本：V1.0.1</div>
+      </div>
+    </section>
+
+    <section class="detail-panel">
+      <div class="panel-top">
+        <div>
+          <strong>智能体配置详情</strong>
+          <span>查看当前应用版本、配置项和使用入口，支持导出及反馈提交。</span>
+        </div>
+        <div class="panel-actions">
+          <button class="btn primary">立即使用</button>
+          <button class="btn">导出</button>
+          <select class="version-select">
+            <option>V1.0.1</option>
+            <option>V1.0.0</option>
+            <option>V0.9.8</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="detail-body">
+        <div class="info-grid">
+          <div class="section-card">
+            <div class="section-head">
+              <strong>基础说明</strong>
+              <span>说明智能体能力范围、输入输出结构及配置依赖。</span>
+            </div>
+            <div class="section-body">
+              <div class="desc-list">
+                <div class="desc-row">
+                  <label>功能说明</label>
+                  <div class="desc-text">根据自然语言生成 SQL 语句，执行 SQL 语句获取数据，适用于经营分析、运营报表和数据问答等场景。</div>
+                </div>
+                <div class="desc-row">
+                  <label>调用链接</label>
+                  <div class="link-box">
+                    <div class="link-meta">
+                      <strong>应用调用地址</strong>
+                      <span class="link-url">https://sophicagent.example.com/api/agents/industry-ask-data/invoke</span>
+                    </div>
+                    <button class="btn ghost">复制链接</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="io-grid">
+                <div class="io-row">
+                  <label>入参说明</label>
+                  <div class="field-pair">
+                    <div class="field-key">question</div>
+                    <div class="field-value">用户问题</div>
+                  </div>
+                </div>
+                <div class="io-row">
+                  <label>出参说明</label>
+                  <div class="field-pair">
+                    <div class="field-key">output</div>
+                    <div class="field-value">查询结果</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="desc-row" style="grid-template-columns:118px 1fr;">
+                <label>智能体配置</label>
+                <div class="config-table">
+                  <div class="config-row">
+                    <div class="config-label">模型</div>
+                    <div class="config-content">
+                      <span>对话模型：</span>
+                      <span class="config-tag">deepseekV3</span>
+                      <span>嵌入模型：</span>
+                      <span class="config-tag">bge3-m3</span>
+                    </div>
+                  </div>
+                  <div class="config-row">
+                    <div class="config-label">工具</div>
+                    <div class="config-content">数据库操作 MCP</div>
+                  </div>
+                  <div class="config-row">
+                    <div class="config-label">知识库</div>
+                    <div class="config-content">
+                      <span class="config-tag">电力知识库</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-side">
+            <div class="stats-card">
+              <strong>运行概览</strong>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span>本周调用量</span>
+                  <strong>623</strong>
+                </div>
+                <div class="stat-item">
+                  <span>成功率</span>
+                  <strong>98.6%</strong>
+                </div>
+                <div class="stat-item">
+                  <span>平均响应</span>
+                  <strong>1.8s</strong>
+                </div>
+                <div class="stat-item">
+                  <span>知识条目</span>
+                  <strong>268</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats-card">
+              <strong>归属信息</strong>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span>智能体类型</span>
+                  <strong>Agent</strong>
+                </div>
+                <div class="stat-item">
+                  <span>当前版本</span>
+                  <strong>V1.0.1</strong>
+                </div>
+                <div class="stat-item">
+                  <span>负责人</span>
+                  <strong>张三</strong>
+                </div>
+                <div class="stat-item">
+                  <span>更新时间</span>
+                  <strong>04-08</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="feedback-card">
+          <div class="feedback-head">
+            <strong>反馈</strong>
+            <span>提交使用问题、结果偏差或功能建议，支持后续持续优化。</span>
+          </div>
+          <div class="feedback-body">
+            <textarea class="feedback-box" placeholder="请输入你的反馈内容，例如：生成 SQL 的字段映射需要补充某些业务口径说明。"></textarea>
+            <div class="feedback-actions">
+              <button class="btn primary">提交</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
