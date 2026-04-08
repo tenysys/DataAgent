@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SophicAgent 设计器配置</title>
+  <style>
+    :root {
+      --bg: #edf3fb;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-soft: #f4f8fd;
+      --line: #d7e3f0;
+      --text: #152235;
+      --muted: #65788f;
+      --brand: #2f7ff0;
+      --brand-strong: #1e63c7;
+      --brand-soft: rgba(47, 127, 240, 0.14);
+      --success: #15b26b;
+      --purple: #6f3ff5;
+      --shadow: 0 32px 80px rgba(18, 39, 67, 0.13);
+      --shadow-soft: 0 18px 42px rgba(18, 39, 67, 0.09);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(47, 127, 240, 0.13), transparent 18%),
+        radial-gradient(circle at 88% 10%, rgba(33, 201, 145, 0.08), transparent 16%),
+        linear-gradient(180deg, #fbfdff 0%, var(--bg) 46%, #f6f9fe 100%);
+    }
+
+    .top-shell {
+      background: rgba(255,255,255,.84);
+      border-bottom: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 24px 14px;
+      flex-wrap: wrap;
+    }
+
+    .header-main,
+    .header-actions,
+    .editor-tools,
+    .debug-actions,
+    .toolbar-left,
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .back {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: var(--muted);
+      box-shadow: var(--shadow-soft);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(21, 178, 107, 0.14);
+      color: #12945a;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .save-time {
+      color: #a0acb8;
+      font-weight: 700;
+    }
+
+    .btn {
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.94);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand), #4a96ff);
+      color: #fff;
+      border: 0;
+      box-shadow: 0 16px 28px rgba(47, 127, 240, 0.24);
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      padding: 0 24px 16px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      position: relative;
+      border: 0;
+      background: transparent;
+      color: #304255;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 0 0 10px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      color: var(--brand);
+    }
+
+    .tab.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3ea0ff, #2f7ff0);
+    }
+
+    .workspace {
+      padding: 20px 22px 28px;
+      max-width: 1660px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      display: none;
+      background: linear-gradient(180deg, rgba(255,255,255,.78) 0%, rgba(250,252,255,.92) 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .config-layout {
+      display: grid;
+      grid-template-columns: 100px minmax(0, 1fr) 42%;
+      min-height: 760px;
+    }
+
+    .left-nav {
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(251,253,255,.86) 0%, rgba(244,248,252,.92) 100%);
+      padding: 20px 12px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .nav-item {
+      padding: 12px 10px;
+      border-radius: 14px;
+      color: #51647a;
+      font-size: 14px;
+      font-weight: 700;
+      background: transparent;
+      transition: .16s ease;
+    }
+
+    .nav-item.active {
+      background: var(--brand-soft);
+      color: var(--brand);
+      box-shadow: inset 0 0 0 1px rgba(47,127,240,.08);
+    }
+
+    .editor-area {
+      padding: 20px;
+      border-right: 1px solid var(--line);
+    }
+
+    .editor-head,
+    .debug-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .editor-head h2,
+    .debug-head h2,
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .subhead {
+      color: #7c8c9f;
+      font-weight: 700;
+    }
+
+    .mini-select,
+    .small-box,
+    .input,
+    .textarea,
+    .filter-select,
+    .search,
+    .chat-input {
+      font: inherit;
+      color: var(--text);
+    }
+
+    .mini-select,
+    .small-box,
+    .input,
+    .filter-select,
+    .search {
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.96);
+      padding: 0 12px;
+      box-shadow: inset 0 1px 2px rgba(18, 39, 67, 0.03);
+    }
+
+    .textarea,
+    .chat-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.96);
+      padding: 14px 16px;
+      resize: vertical;
+      line-height: 1.75;
+      box-shadow: inset 0 1px 2px rgba(18, 39, 67, 0.03);
+    }
+
+    .textarea {
+      min-height: 92px;
+    }
+
+    .chat-input {
+      min-height: 170px;
+    }
+
+    .group {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(250,252,255,.92) 0%, rgba(245,248,252,.92) 100%);
+      border: 1px solid #edf2f7;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .group h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      color: #8090a4;
+    }
+
+    .link-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .link-item {
+      color: #304255;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .link-item span {
+      color: var(--brand);
+      margin-left: 8px;
+    }
+
+    .switch-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: #304255;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .switch {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      background: #dce5ef;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(20, 40, 68, 0.18);
+    }
+
+    .planner {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: center;
+    }
+
+    .planner span {
+      color: #54667d;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .debug-area {
+      padding: 20px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 14px;
+      background: linear-gradient(180deg, rgba(249, 251, 255, 0.56) 0%, rgba(255,255,255,0.7) 100%);
+    }
+
+    .debug-actions {
+      color: #60748b;
+      font-size: 20px;
+    }
+
+    .chat-shell {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(47,127,240,.03), rgba(47,127,240,0)),
+        linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      min-height: 430px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    .publish-panel,
+    .filter-panel,
+    .log-panel,
+    .monitor-panel {
+      padding: 24px;
+    }
+
+    .section-sub {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .publish-block {
+      padding: 20px 0;
+      border-top: 1px solid #edf2f7;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .publish-block h3,
+    .chart-card h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+
+    .publish-block p,
+    .chart-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .api-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 0 8px;
+      color: #62748a;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .inline-links {
+      display: flex;
+      gap: 26px;
+      color: var(--purple);
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .subtabs {
+      display: flex;
+      gap: 30px;
+      margin: 16px 0;
+      font-weight: 700;
+      color: #5a6d83;
+      flex-wrap: wrap;
+    }
+
+    .subtabs .active {
+      color: var(--brand);
+      text-decoration: underline;
+      text-underline-offset: 10px;
+      text-decoration-thickness: 3px;
+    }
+
+    .toolbar-row {
+      justify-content: space-between;
+      gap: 16px;
+      margin: 12px 0 18px;
+    }
+
+    .table-shell {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow-soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #f4f7fb;
+      color: #475a70;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e7edf5;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-top: 1px solid #edf2f7;
+      color: #324154;
+      font-size: 14px;
+    }
+
+    .metrics-top {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .metric-card,
+    .chart-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.86) 0%, rgba(251,253,255,.92) 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
+    }
+
+    .metric-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .metric-card strong {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .metric-card em {
+      display: block;
+      margin-top: 8px;
+      color: #9aa8b7;
+      font-style: normal;
+      font-weight: 700;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .chart-card p {
+      margin: 0 0 14px;
+      font-weight: 700;
+    }
+
+    .chart {
+      width: 100%;
+      height: 180px;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(47,127,240,.06), rgba(47,127,240,0) 70%),
+        repeating-linear-gradient(to bottom, transparent 0 28px, #edf2f7 28px 29px);
+      border: 1px solid #edf2f7;
+      overflow: hidden;
+    }
+
+    .chart svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    @media (max-width: 1180px) {
+      .config-layout {
+        grid-template-columns: 90px 1fr;
+      }
+      .debug-area {
+        grid-column: 1 / -1;
+        border-top: 1px solid var(--line);
+      }
+      .editor-area {
+        border-right: 0;
+      }
+      .chart-grid,
+      .metrics-top {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .header,
+      .tabs,
+      .toolbar-row,
+      .publish-block {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .config-layout,
+      .chart-grid,
+      .metrics-top,
+      .planner {
+        grid-template-columns: 1fr;
+      }
+      .left-nav {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .editor-area {
+        border-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-shell">
+    <div class="header">
+      <div class="header-main">
+        <div class="back">←</div>
+        <h1>行业智能问数</h1>
+        <div class="status">已发布</div>
+        <div class="save-time">保存于 01-19 10:23</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn">版本管理</button>
+        <button class="btn primary">发布</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="config">配置</button>
+      <button class="tab" data-tab="publish">发布</button>
+      <button class="tab" data-tab="filter">过滤</button>
+      <button class="tab" data-tab="log">日志</button>
+      <button class="tab" data-tab="monitor">监测</button>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <section class="panel active" id="panel-config">
+      <div class="config-layout">
+        <aside class="left-nav">
+          <div class="nav-item active">规划</div>
+          <div class="nav-item">知识</div>
+          <div class="nav-item">工具</div>
+          <div class="nav-item">记忆</div>
+          <div class="nav-item">回复</div>
+        </aside>
+
+        <div class="editor-area">
+          <div class="editor-head">
+            <div>
+              <h2>规划</h2>
+              <div class="subhead">提示词</div>
+            </div>
+            <div class="editor-tools">
+              <button class="btn">Agent 设置</button>
+              <select class="mini-select">
+                <option>deepseek V3</option>
+              </select>
+              <button class="btn">{x} 自定义变量</button>
+              <button class="btn">AI 优化</button>
+            </div>
+          </div>
+          <textarea class="textarea"></textarea>
+
+          <div class="group">
+            <h3>知识</h3>
+            <div class="link-list">
+              <div class="link-item">文档<span>+</span></div>
+            </div>
+          </div>
+
+          <div class="group">
+            <h3>工具</h3>
+            <div class="link-list">
+              <div class="link-item">MCP服务<span>+</span></div>
+              <div class="link-item">工作流<span>+</span></div>
+              <div class="link-item">智能体<span>+</span></div>
+            </div>
+          </div>
+
+          <div class="group">
+            <h3>记忆</h3>
+            <div class="switch-line">
+              <span>短期记忆</span>
+              <div class="small-box" style="width:52px;"></div>
+              <span style="color:#7c8c9f;font-size:12px;">携带上写文轮数</span>
+            </div>
+            <div class="switch-line">
+              <span>长期记忆</span>
+              <div class="switch"></div>
+            </div>
+          </div>
+
+          <div class="group">
+            <h3>回复</h3>
+            <div class="switch-line">
+              <span>干预智能体回复(异常)</span>
+              <div class="switch"></div>
+            </div>
+            <input class="input" style="width:100%;" />
+          </div>
+
+          <div class="group">
+            <h3>拼接长度规划</h3>
+            <div class="planner">
+              <span>总输入长度 0/100000</span>
+              <span>提示词长度 0</span>
+              <input class="small-box" />
+            </div>
+          </div>
+        </div>
+
+        <div class="debug-area">
+          <div class="debug-head">
+            <h2>调试</h2>
+            <div class="debug-actions">⌘ ⌁ ⌂</div>
+          </div>
+          <div class="chat-shell"></div>
+          <textarea class="chat-input"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-publish">
+      <div class="publish-panel">
+        <h2 class="section-title">调用方式</h2>
+        <p class="section-sub">本地发布，适用于通过 API/SDK 调用当前应用，灵活集成到业务场景中。</p>
+        <div class="api-line">
+          <span>应用ID：2a8097784db847feac38686f1ca3f65f</span>
+          <div class="inline-links">
+            <span>API KEY</span>
+            <span>查看API</span>
+          </div>
+        </div>
+
+        <div class="publish-block">
+          <div>
+            <h3>API</h3>
+            <p>以 API 的形式调用当前应用，需要传入应用 ID、API-KEY 等参数数值，通过 http 请求调用。</p>
+          </div>
+          <div class="inline-links">
+            <span>API KEY</span>
+            <span>查看API</span>
+          </div>
+        </div>
+
+        <div class="publish-block">
+          <div>
+            <h3>SDK</h3>
+            <p>通过 DashScope SDK 调用，支持复杂业务开发需求。</p>
+          </div>
+          <div></div>
+        </div>
+
+        <h2 class="section-title" style="margin-top:18px;">发布商店</h2>
+        <p class="section-sub">发布到智能体商店，分为平台智能体和应用智能体商店，应用智能体商店面向具体业务场景的应用智能体集合。</p>
+
+        <div class="publish-block">
+          <div>
+            <h3>发布为应用</h3>
+            <p>功能完备的 agent，作为完整的智能体应用，提供给各部门使用。</p>
+          </div>
+          <div class="inline-links"><span>创建</span></div>
+        </div>
+
+        <div class="publish-block">
+          <div>
+            <h3>发布为模板</h3>
+            <p>作为开发模板，支持其他人复制到设计中心进行二次编辑。</p>
+          </div>
+          <div class="inline-links"><span>创建</span></div>
+        </div>
+
+        <h2 class="section-title" style="margin-top:18px;">发布工具</h2>
+        <p class="section-sub">发布到能力中心，作为工具用于 Agent 继续开发，把当前 Agent 集成到其他业务流程。</p>
+
+        <div class="publish-block">
+          <div>
+            <h3>发布为工具</h3>
+            <p>将垂直场景 agent 或 workflow 发布为可插拔工具，作为其他工作流的节点和智能体工具。</p>
+          </div>
+          <div class="inline-links"><span>创建</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-filter">
+      <div class="filter-panel">
+        <h2 class="section-title">快速干预</h2>
+        <p class="section-sub">通过正则表达式快速替换问题和回答中的不合规内容。</p>
+        <div class="toolbar-row">
+          <div class="subtabs">
+            <span>干预输入话术</span>
+            <span class="active">干预生成结果</span>
+          </div>
+          <button class="btn primary">创建输入话术规则</button>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>规则名称</th>
+                <th>创建时间</th>
+                <th>编辑时间</th>
+                <th>触发条件响应</th>
+                <th>生效状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6" style="height:320px;color:#a4afbc;">暂无规则数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-log">
+      <div class="log-panel">
+        <h2 class="section-title">日志</h2>
+        <div class="toolbar-row">
+          <div class="toolbar-left">
+            <select class="filter-select">
+              <option>所有时间</option>
+            </select>
+            <input class="search" placeholder="请输入内容" />
+          </div>
+          <button class="btn primary">导出</button>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>标题</th>
+                <th>用户</th>
+                <th>消息数</th>
+                <th>用户反馈</th>
+                <th>更新时间</th>
+                <th>创建时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>测试</td>
+                <td>test</td>
+                <td>4</td>
+                <td>-</td>
+                <td>2026-01-19 15:23:12</td>
+                <td>2026-01-19 14:31:23</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-monitor">
+      <div class="monitor-panel">
+        <h2 class="section-title">概览指标</h2>
+        <div class="metrics-top">
+          <div class="metric-card"><span>总会话数</span><strong>0 次</strong><em>环比 0%</em></div>
+          <div class="metric-card"><span>总使用人数</span><strong>0 人</strong><em>环比 0%</em></div>
+          <div class="metric-card"><span>总失败次数</span><strong>0 次</strong><em>环比 0%</em></div>
+          <div class="metric-card"><span>平均首包延时</span><strong>0 秒</strong><em>环比 0%</em></div>
+        </div>
+        <h2 class="section-title">详细指标</h2>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h3>会话数</h3>
+            <p>均值 40 次</p>
+            <div class="chart">
+              <svg viewBox="0 0 520 180" preserveAspectRatio="none">
+                <polyline fill="none" stroke="#2f7ff0" stroke-width="3" points="30,80 140,116 250,50 360,38 470,98"/>
+                <circle cx="30" cy="80" r="4" fill="#2f7ff0"/><circle cx="140" cy="116" r="4" fill="#2f7ff0"/><circle cx="250" cy="50" r="4" fill="#2f7ff0"/><circle cx="360" cy="38" r="4" fill="#2f7ff0"/><circle cx="470" cy="98" r="4" fill="#2f7ff0"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>使用人数</h3>
+            <p>均值 40 次</p>
+            <div class="chart">
+              <svg viewBox="0 0 520 180" preserveAspectRatio="none">
+                <polyline fill="none" stroke="#2f7ff0" stroke-width="3" points="30,80 140,116 250,50 360,38 470,98"/>
+                <circle cx="30" cy="80" r="4" fill="#2f7ff0"/><circle cx="140" cy="116" r="4" fill="#2f7ff0"/><circle cx="250" cy="50" r="4" fill="#2f7ff0"/><circle cx="360" cy="38" r="4" fill="#2f7ff0"/><circle cx="470" cy="98" r="4" fill="#2f7ff0"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>平均对话次数</h3>
+            <p>均值 40 次</p>
+            <div class="chart">
+              <svg viewBox="0 0 520 180" preserveAspectRatio="none">
+                <polyline fill="none" stroke="#2f7ff0" stroke-width="3" points="30,80 140,116 250,50 360,38 470,98"/>
+                <circle cx="30" cy="80" r="4" fill="#2f7ff0"/><circle cx="140" cy="116" r="4" fill="#2f7ff0"/><circle cx="250" cy="50" r="4" fill="#2f7ff0"/><circle cx="360" cy="38" r="4" fill="#2f7ff0"/><circle cx="470" cy="98" r="4" fill="#2f7ff0"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>平均响应时间</h3>
+            <p>均值 40 次</p>
+            <div class="chart">
+              <svg viewBox="0 0 520 180" preserveAspectRatio="none">
+                <polyline fill="none" stroke="#2f7ff0" stroke-width="3" points="30,80 140,116 250,50 360,38 470,98"/>
+                <circle cx="30" cy="80" r="4" fill="#2f7ff0"/><circle cx="140" cy="116" r="4" fill="#2f7ff0"/><circle cx="250" cy="50" r="4" fill="#2f7ff0"/><circle cx="360" cy="38" r="4" fill="#2f7ff0"/><circle cx="470" cy="98" r="4" fill="#2f7ff0"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab[data-tab]');
+    const panels = document.querySelectorAll('.panel');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        panels.forEach((p) => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
